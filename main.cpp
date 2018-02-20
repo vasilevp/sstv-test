@@ -176,7 +176,11 @@ int main(int argc, char *argv[])
 	}
 
 	sstv(argv[1]);
-	/*
+}
+
+/*
+void failed_aprs_attempt_dont_look_here()
+{
 	const size_t sample_rate = 20000;
 
 	wav w("out.wav", sample_rate);
@@ -226,5 +230,5 @@ int main(int argc, char *argv[])
 				w.put(x);
 			}
 		}
-	}*/
-}
+	}
+}*/
