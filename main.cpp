@@ -96,15 +96,15 @@ size_t ms2samp(float ms, size_t sample_rate)
 }
 
 #define SYNTH(length, freq)                        \
-	{                                              \
-		auto sync = ms2samp(length, sample_rate);  \
-		while (sync--)                             \
-		{                                          \
-			uint8_t x = lut[idx % LEN(lut)] + 127; \
-			idx += freq / freq_step;               \
-			w.put(x);                              \
-		}                                          \
-	}
+    {                                              \
+        auto frame = ms2samp(length, sample_rate); \
+        while (frame--)                            \
+        {                                          \
+            uint8_t x = lut[idx % LEN(lut)] + 127; \
+            idx += freq / freq_step;               \
+            w.put(x);                              \
+        }                                          \
+    }
 
 void sstv(char *file)
 {
