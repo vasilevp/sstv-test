@@ -28,12 +28,19 @@ Available commands:
 
 	if (argv[1] == "aprs"s)
 	{
+		std::string message;
+		for (int i = 6; i < argc; ++i)
+		{
+			message.append(argv[i]);
+			message.push_back(' ');
+		}
+
 		auto packet = APRSPacket(
 						  std::atoi(argv[2]),
 						  argv[3],
 						  std::atoi(argv[4]),
 						  argv[5],
-						  argc > 6 ? argv[6] : "")
+						  message)
 						  .ToString();
 
 		AFSK1200::Encode(packet, "aprs.wav");

@@ -86,8 +86,6 @@ class APRSPacket
         packet.push_back(0xF0);
 
         // Information Field
-        packet.append(">HELLO");
-
         packet.append(custom_data);
 
         // Frame Check Sequence - CRC-16-CCITT (0xFFFF)
