@@ -32,7 +32,7 @@ Available commands:
 						  std::atoi(argv[2]),
 						  argv[3],
 						  std::atoi(argv[4]),
-						  std::atoi(argv[5]),
+						  argv[5],
 						  argc > 6 ? argv[6] : "")
 						  .ToString();
 

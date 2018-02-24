@@ -4,18 +4,18 @@
 
 class APRSPacket
 {
+  public:
     uint8_t sender_ssid;
     std::string sender_callsign;
     uint8_t target_ssid;
-    uint8_t send_path;
+    std::string send_path;
     std::string custom_data;
 
-  public:
     APRSPacket(
         uint8_t sender_ssid,
         const std::string &sender_callsign,
         uint8_t target_ssid,
-        uint8_t send_path,
+        const std::string &send_path,
         const std::string &custom_data = "")
         : sender_ssid(sender_ssid),
           sender_callsign(sender_callsign),
@@ -25,38 +25,49 @@ class APRSPacket
     {
     }
 
-    std::string ToString() const
+    static std::string prepareCallsign(std::string cs)
     {
-        if (sender_callsign.size() != 6)
+        if (cs.size() > 6)
         {
-            throw std::runtime_error("sender_callsign should be exactly 6 letters long");
+            throw std::runtime_error("Callsign " + cs + " is longer than 6 symbols!");
         }
 
+        cs.append(6 - cs.size(), ' ');
+        return cs;
+    }
+
+    std::string ToString() const
+    {
         std::string packet;
 
+        // Field name   | FLAG | DEST   | SOURCE | DIGIS | CONTROL | PROTO | INFO   | FCS   | FLAG
+        // Size (bytes) | 1    | 7      | 7      | 0-56  | 1       | 1     | 1-256  | 2     | 1
+        // Example      | 0x7E | APZQ00 | PIRATE | WIDE1 | 0x03    | 0xF0  | >HELLO | <...> | 0x7E
+        // The above example will send the status HELLO from PIRATE with APZQ00 (experimental software v0.0)
+
         // this will speed shit up a notch
-        packet.reserve(128);
+        packet.reserve(512);
 
         // some starting markers
         // shifted right because at the end we shift everything to the left
-        packet.insert(packet.end(), 1, 0x7E >> 1);
+        packet.push_back(0x7E >> 1);
 
-        // APRS destination
-        appendString(packet, "APZQ00");
+        // APRS address structure is as follows:
+        // XXXXXXb, where XXXXXX is an uppercase ASCII 6-symbol callsign
+        // and b is the SSID byte:
+        //     0b0C11SSSS
+        //         C - command/response bit
+        //         S - 4 SSID bits (APRS symbol id, 0-15)
 
-        // SSID of the destination
-        packet.push_back(0b01110000 | target_ssid); // 0b0CRRSSID (C - command/response bit '1', RR - reserved '11', SSID - 0-15)
+        // we identify ourselves as APZQ01 - experimental software, version 0.1
+        packet.append("APZQ00");
+        packet.push_back(0b01110000 | target_ssid);
 
         // Source Address
-        appendString(packet, sender_callsign);
+        packet.append(prepareCallsign(sender_callsign));
+        packet.push_back(0b00110000 | (sender_ssid & 0x0F));
 
-        // SSID to specify an APRS symbol (11 - balloon)
-        packet.push_back(0b00110000 | (sender_ssid & 0x0F)); // 0b0CRRSSID (C - command/response bit '1', RR - reserved '11', SSID - 0-15)
-
-        appendString(packet, "WIDE");
-
-        packet.push_back(send_path + '0');
-        packet.push_back(' ');
+        packet.append(prepareCallsign(send_path));
         packet.push_back(0b00110001); // 0b0HRRSSID (H - 'has been repeated' bit, RR - reserved '11', SSID - 0-15)
 
         // left shift the address bytes
@@ -75,12 +86,9 @@ class APRSPacket
         packet.push_back(0xF0);
 
         // Information Field
-        packet.push_back('@');
-        appendString(packet, timestr());
+        packet.append(">HELLO");
 
-        appendString(packet, "0000.00N/00000.00W.");
-
-        appendString(packet, custom_data);
+        packet.append(custom_data);
 
         // Frame Check Sequence - CRC-16-CCITT (0xFFFF)
         uint16_t crc = 0xFFFF;
@@ -99,13 +107,6 @@ class APRSPacket
     }
 
   private:
-    // Appends a string without the trailing zero
-    template <typename Cont>
-    static void appendString(Cont &container, const std::string &data)
-    {
-        container.insert(container.end(), std::begin(data), std::end(data));
-    }
-
     static uint16_t crc_ccitt_update(uint16_t crc, uint8_t data)
     {
         data ^= crc & 0xff;
