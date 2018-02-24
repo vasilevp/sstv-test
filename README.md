@@ -9,6 +9,3 @@ gcc -c -o endianness.o C-Wav-Lib/endianness.c
 gcc -c -o wav.o C-Wav-Lib/wav.c
 g++ *.o main.cpp
 ```
-```
-./a.out <input_file.bmp>
-```
