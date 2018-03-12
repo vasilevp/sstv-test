@@ -6,24 +6,24 @@ extern "C" {
 #include "C-Wav-Lib/wav.h"
 };
 
-class WAV
+class WAVWriter
 {
     const size_t sample_rate;
 
     FILE *f = nullptr;
 
-    std::vector<uint8_t> samples = std::vector<uint8_t>(0, 0);
+    std::vector<uint8_t> samples;
     wav_sample_t sample = {1, 1, 1, nullptr};
 
   public:
-    WAV(const std::string &name, const size_t sample_rate)
+    WAVWriter(const std::string &name, const size_t sample_rate)
         : sample_rate(sample_rate)
     {
         f = name != "-" ? fopen(name.c_str(), "wb") : stdout;
         samples.reserve(sample_rate);
     }
 
-    ~WAV()
+    ~WAVWriter()
     {
         write_wav_header(
             f,
@@ -62,5 +62,21 @@ class WAV
     size_t size() const
     {
         return samples.size();
+    }
+};
+class WAVReader
+{
+    std::vector<uint32_t> samples;
+    wav_sample_t sample = {1, 1, 1, nullptr};
+
+  public:
+    WAVReader(const std::string &name)
+    {
+        FILE *f = name != "-" ? fopen(name.c_str(), "rb") : stdin;
+        wav_header_t hdr;
+        read_wav_header(f, &hdr);
+        std::vector<uint32_t> samples_tmp;
+        samples_tmp.reserve(hdr.Data.Subchunk2Size);
+        read_wav_samples(f, samples.data(), hdr.Data.Subchunk2Size, 1, 0);
     }
 };

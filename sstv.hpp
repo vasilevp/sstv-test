@@ -43,7 +43,7 @@ class SSTV
         // MUST BE A MULTIPLE OF 2000
         const size_t sample_rate = 44000;
 
-        WAV w(output, sample_rate);
+        WAVWriter w(output, sample_rate);
 
         const int freq_step = sample_rate / utils::lut_size;
 
