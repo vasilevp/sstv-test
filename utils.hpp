@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <memory>
+#include <array>
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
@@ -9,9 +10,8 @@
 
 namespace utils
 {
-static int8_t lut[] = {
+    static constexpr auto lut = std::to_array<int8_t>({
 #include "sine.txt"
-};
+    });
 
-const size_t lut_size = sizeof(lut) / sizeof(*lut);
-}
+};

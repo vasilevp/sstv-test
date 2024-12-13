@@ -4,5 +4,6 @@
 *.ogg
 *.o
 a.out
+*.exe
 
 .vscode/

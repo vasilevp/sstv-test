@@ -5,20 +5,24 @@
 #include <vector>
 
 #include "utils.hpp"
-#include "sstv.hpp"
+#include "robot8.hpp"
+#include "robot36.hpp"
+#include "martin.hpp"
 #include "wav.hpp"
 
-using namespace std::literals;
+using namespace std;
 
 int main(int argc, char *argv[])
 {
-	if (argc != 3)
+	if (argc != 2)
 	{
-		std::cerr
-		    << "Usage: " << argv[0] << " <input_bmp> <output_wav> - converts a BMP into ROBOT B/W 8 WAV SSTV format" << std::endl;
+		println("Usage: {} <input_bmp> - converts a BMP into ROBOT B/W 8 WAV SSTV format", argv[0]);
 		return 1;
 	}
 
-	SSTV::Encode(argv[1], argv[2]);
+	Robot8(argv[1], "outputs/robot8.wav").Encode();
+	Robot(argv[1], "outputs/robot36.wav").Encode();
+	Martin(argv[1], "outputs/martin1.wav", 1).Encode();
+	Martin(argv[1], "outputs/martin2.wav", 2).Encode();
 	return 0;
 }

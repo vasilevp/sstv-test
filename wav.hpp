@@ -2,7 +2,8 @@
 #include <vector>
 #include <string>
 
-extern "C" {
+extern "C"
+{
 #include "C-Wav-Lib/wav.h"
 };
 
@@ -15,7 +16,7 @@ class WAVWriter
     std::vector<uint8_t> samples;
     wav_sample_t sample = {1, 1, 1, nullptr};
 
-  public:
+public:
     WAVWriter(const std::string &name, const size_t sample_rate)
         : sample_rate(sample_rate)
     {
@@ -32,7 +33,7 @@ class WAVWriter
             1,
             samples.size() + sample_rate / 10 * 2);
 
-        std::vector<uint8_t> silence(sample_rate / 10, 128);
+        std::vector<uint8_t> silence(sample_rate / 2, 128);
 
         // surround actual data with silence for easier playback
         sample.DataSize = silence.size();
@@ -69,7 +70,7 @@ class WAVReader
     std::vector<uint32_t> samples;
     wav_sample_t sample = {1, 1, 1, nullptr};
 
-  public:
+public:
     WAVReader(const std::string &name)
     {
         FILE *f = name != "-" ? fopen(name.c_str(), "rb") : stdin;
