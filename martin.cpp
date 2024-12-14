@@ -13,56 +13,55 @@ using namespace std;
 
 void Martin::Encode()
 {
-    if (height != 256)
-    {
-        print(cerr, "WARN: Image height must be 256 pixels! Provided height of {} may cause issues with the receiver.", height);
-    }
+	if (height != 256)
+	{
+		print(cerr, "WARN: Image height must be 256 pixels! Provided height of {} may cause issues with the receiver.", height);
+	}
 
-    writeHeader();
-    const float syncPulse = 4.862;
-    const float syncPorch = 0.572;
-    const float pixelTime = 73.216f * (3 - mode) / width;
+	writeHeader();
+	const float pixelTime = lineTime * (3 - mode) / width;
 
-    auto colorLine = [&](int i, size_t color) constexpr
-    {
-        // sync porch
-        s.synth(syncPorch, 1500);
+	for (size_t i = 0; i < height; ++i)
+	{
+		// sync pulse
+		s.synth(syncPulse, SyncPulse);
 
-        for (size_t j = 0; j < width; ++j)
-        {
-            size_t offset = (i * width + j) * 3;
-            float G = pixels[offset + color];
+		colorLine(i, 1);
+		colorLine(i, 2);
+		colorLine(i, 0);
 
-            int freq = 1500 + 800 * G / 255;
+		// separator
+		s.synth(syncPorch, SyncPorch);
+	}
 
-            // pixel
-            s.synth(pixelTime, freq);
-        }
-    };
+	// padding for reference
+	for (size_t i = height; i < 256; ++i)
+	{
+		// sync pulse
+		s.synth(syncPulse, SyncPulse);
 
-    for (size_t i = 0; i < height; ++i)
-    {
-        // sync pulse
-        s.synth(syncPulse, 1200);
+		colorLine(height - 1, 1);
+		colorLine(height - 1, 2);
+		colorLine(height - 1, 0);
 
-        colorLine(i, 1);
-        colorLine(i, 2);
-        colorLine(i, 0);
-
-        // separator
-        s.synth(syncPorch, 1500);
-    }
-
-    for (size_t i = height; i < 256; ++i)
-    {
-        // sync pulse
-        s.synth(syncPulse, 1200);
-
-        colorLine(height - 1, 1);
-        colorLine(height - 1, 2);
-        colorLine(height - 1, 0);
-
-        // separator
-        s.synth(syncPorch, 1500);
-    }
+		// separator
+		s.synth(syncPorch, SyncPorch);
+	}
 }
+void Martin::colorLine(int i, size_t color)
+{
+	const float pixelTime = lineTime * (3 - mode) / width;
+
+	// sync porch
+	s.synth(syncPorch, Frequency::SyncPorch);
+
+	for (size_t j = 0; j < width; ++j)
+	{
+		size_t offset = (i * width + j) * 3;
+		float c = pixels[offset + color];
+		auto freq = Synthesizer::Lerp(c / 255);
+
+		// pixel
+		s.synth(pixelTime, freq);
+	}
+};

@@ -9,52 +9,53 @@
 
 void Robot8::Encode()
 {
-    if ((height % 120) != 0)
-    {
-        throw std::runtime_error("Image height must be divisible by 120!");
-    }
+	if ((height % 120) != 0)
+	{
+		throw std::runtime_error("Image height must be divisible by 120!");
+	}
 
-    writeHeader();
+	writeHeader();
 
-    const float pixelTime = lineTime / width;
-    const int stride = height / 120;
+	writeGreyscale();
 
-    for (size_t i = 0; i < height; i += stride)
-    {
-        // sync pulse
-        s.synth(syncTime, 1200);
+	const float pixelTime = lineTime / width;
+	const int stride = height / 120;
 
-        for (size_t j = 0; j < width; ++j)
-        {
-            size_t offset = (i * width + j) * 3;
-            float Y = getY(pixels, offset);
-            int freq = 1500 + 800 * Y / 255;
+	for (size_t i = 0; i < height; i += stride)
+	{
+		// sync pulse
+		s.synth(syncTime, SyncPulse);
 
-            // pixel
-            s.synth(pixelTime, freq);
-        }
-    }
+		for (size_t j = 0; j < width; ++j)
+		{
+			size_t offset = (i * width + j) * 3;
+			float Y = getY(pixels, offset);
+
+			// pixel
+			s.synth(pixelTime, s.Lerp(Y / 255));
+		}
+	}
 }
 
-void Robot8::WriteGreyscale(int size)
+void Robot8::writeGreyscale()
 {
-    const float syncTime = 5;
-    const float pixelTime = 56.0f / width;
+	const float syncTime = 5;
+	const float pixelTime = 56.0f / width;
 
-    for (size_t i = 0; i < 8; ++i)
-    {
-        // sync pulse
-        s.synth(syncTime, 1200);
+	for (size_t i = 0; i < 8; ++i)
+	{
+		// sync pulse
+		s.synth(syncTime, SyncPulse);
 
-        for (size_t j = 0; j < width; ++j)
-        {
-            size_t offset = (i * width + j) * 3;
-            float val = float(j * 255) / width;
+		for (size_t j = 0; j < width; ++j)
+		{
+			size_t offset = (i * width + j) * 3;
+			float val = float(j) / width;
 
-            int freq = 1500 + 800 * val / 255;
+			auto freq = Synthesizer::Lerp(val);
 
-            // pixel
-            s.synth(pixelTime, freq);
-        }
-    }
+			// pixel
+			s.synth(pixelTime, freq);
+		}
+	}
 }

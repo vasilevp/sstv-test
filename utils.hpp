@@ -10,8 +10,8 @@
 
 namespace utils
 {
-    static constexpr auto lut = std::to_array<int8_t>({
+	static constexpr auto lut = std::to_array<int8_t>({
 #include "sine.txt"
-    });
+	});
 
 };

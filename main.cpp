@@ -7,6 +7,7 @@
 #include "utils.hpp"
 #include "robot8.hpp"
 #include "robot36.hpp"
+#include "robot72.hpp"
 #include "martin.hpp"
 #include "wav.hpp"
 
@@ -20,8 +21,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	Robot8(argv[1], "outputs/robot8.wav").Encode();
-	Robot(argv[1], "outputs/robot36.wav").Encode();
+	Robot8(argv[1], "outputs/robot8.wav", true).Encode();
+	Robot36(argv[1], "outputs/robot36.wav").Encode();
+	Robot72(argv[1], "outputs/robot72.wav").Encode();
 	Martin(argv[1], "outputs/martin1.wav", 1).Encode();
 	Martin(argv[1], "outputs/martin2.wav", 2).Encode();
 	return 0;

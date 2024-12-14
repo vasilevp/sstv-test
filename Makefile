@@ -24,6 +24,6 @@ main.o: main.cpp *.hpp
 	${ECHO}
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c main.cpp
 
-binary:	main.o wav.o endianness.o loadbmp.o encoder.o robot8.o robot36.o martin.o
+binary:	main.o wav.o endianness.o loadbmp.o encoder.o robot8.o robot.o martin.o
 	${ECHO}
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -o $@ $^

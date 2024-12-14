@@ -5,6 +5,20 @@
 #include "utils.hpp"
 #include "wav.hpp"
 
+enum Frequency : uint16_t
+{
+	Black = 1500,
+	White = 2300,
+	Grey = (Black + White) / 2,
+
+	SyncPulse = 1200,
+	SyncPorch = 1500,
+
+	VISGrey = 1900,
+	VISOne = 1100,
+	VISZero = 1300,
+};
+
 class Synthesizer
 {
 public:
@@ -15,7 +29,17 @@ public:
 	{
 	}
 
-	constexpr void synth(float length, size_t freq)
+	static inline Frequency Lerp(Frequency from, Frequency to, float f)
+	{
+		return Frequency(from + Frequency(float(to - from) * f));
+	}
+
+	static inline Frequency Lerp(float f)
+	{
+		return Lerp(Black, White, f);
+	}
+
+	constexpr void synth(float length, Frequency freq)
 	{
 		frame += ms2samp(length, sample_rate);
 		int newframe = frame;

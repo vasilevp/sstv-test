@@ -9,75 +9,75 @@ extern "C"
 
 class WAVWriter
 {
-    const size_t sample_rate;
+	const size_t sample_rate;
 
-    FILE *f = nullptr;
+	FILE *f = nullptr;
 
-    std::vector<uint8_t> samples;
-    wav_sample_t sample = {1, 1, 1, nullptr};
+	std::vector<uint8_t> samples;
+	wav_sample_t sample = {1, 1, 1, nullptr};
 
 public:
-    WAVWriter(const std::string &name, const size_t sample_rate)
-        : sample_rate(sample_rate)
-    {
-        f = name != "-" ? fopen(name.c_str(), "wb") : stdout;
-        samples.reserve(sample_rate);
-    }
+	WAVWriter(const std::string &name, const size_t sample_rate)
+		: sample_rate(sample_rate)
+	{
+		f = name != "-" ? fopen(name.c_str(), "wb") : stdout;
+		samples.reserve(sample_rate);
+	}
 
-    ~WAVWriter()
-    {
-        write_wav_header(
-            f,
-            1,
-            sample_rate,
-            1,
-            samples.size() + sample_rate / 10 * 2);
+	~WAVWriter()
+	{
+		write_wav_header(
+			f,
+			1,
+			sample_rate,
+			1,
+			samples.size() + sample_rate / 10 * 2);
 
-        std::vector<uint8_t> silence(sample_rate / 2, 128);
+		std::vector<uint8_t> silence(sample_rate / 2, 128);
 
-        // surround actual data with silence for easier playback
-        sample.DataSize = silence.size();
-        sample.sampleData = silence.data();
-        write_wav_sample(f, &sample);
+		// surround actual data with silence for easier playback
+		sample.DataSize = silence.size();
+		sample.sampleData = silence.data();
+		write_wav_sample(f, &sample);
 
-        sample.DataSize = samples.size();
-        sample.sampleData = samples.data();
-        write_wav_sample(f, &sample);
+		sample.DataSize = samples.size();
+		sample.sampleData = samples.data();
+		write_wav_sample(f, &sample);
 
-        sample.DataSize = silence.size();
-        sample.sampleData = silence.data();
-        write_wav_sample(f, &sample);
+		sample.DataSize = silence.size();
+		sample.sampleData = silence.data();
+		write_wav_sample(f, &sample);
 
-        fclose(f);
-    }
+		fclose(f);
+	}
 
-    void put(uint8_t sample)
-    {
-        // don't care about RAM, care about speed
-        if (samples.capacity() == samples.size())
-            samples.reserve(samples.capacity() * 2);
+	void put(uint8_t sample)
+	{
+		// don't care about RAM, care about speed
+		if (samples.capacity() == samples.size())
+			samples.reserve(samples.capacity() * 2);
 
-        samples.push_back(sample);
-    }
+		samples.push_back(sample);
+	}
 
-    size_t size() const
-    {
-        return samples.size();
-    }
+	size_t size() const
+	{
+		return samples.size();
+	}
 };
 class WAVReader
 {
-    std::vector<uint32_t> samples;
-    wav_sample_t sample = {1, 1, 1, nullptr};
+	std::vector<uint32_t> samples;
+	wav_sample_t sample = {1, 1, 1, nullptr};
 
 public:
-    WAVReader(const std::string &name)
-    {
-        FILE *f = name != "-" ? fopen(name.c_str(), "rb") : stdin;
-        wav_header_t hdr;
-        read_wav_header(f, &hdr);
-        std::vector<uint32_t> samples_tmp;
-        samples_tmp.reserve(hdr.Data.Subchunk2Size);
-        read_wav_samples(f, samples.data(), hdr.Data.Subchunk2Size, 1, 0);
-    }
+	WAVReader(const std::string &name)
+	{
+		FILE *f = name != "-" ? fopen(name.c_str(), "rb") : stdin;
+		wav_header_t hdr;
+		read_wav_header(f, &hdr);
+		std::vector<uint32_t> samples_tmp;
+		samples_tmp.reserve(hdr.Data.Subchunk2Size);
+		read_wav_samples(f, samples.data(), hdr.Data.Subchunk2Size, 1, 0);
+	}
 };
