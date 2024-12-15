@@ -8,12 +8,12 @@
 Scottie::Scottie(
 	// Input file name.
 	const std::string &input,
-	// Output file name.
-	const std::string &output,
+	// Output synthesizer.
+	const Synthesizer &s,
 	// Mode.
 	Mode mode,
 	// Greeting text.
-	const std::string &greeting) : Encoder(input, output, mode), greeting(greeting)
+	const std::string &greeting) : Encoder(input, s, mode), greeting(greeting)
 {
 	switch (mode)
 	{
@@ -29,7 +29,7 @@ Scottie::Scottie(
 	default:
 		throw std::invalid_argument("unknown mode");
 	}
-};
+}
 
 void Scottie::Encode()
 {

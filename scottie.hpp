@@ -2,6 +2,7 @@
 
 #include "encoder.hpp"
 
+class Synthesizer;
 class Scottie : Encoder
 {
 public:
@@ -12,7 +13,7 @@ public:
 		DX = 76,
 	};
 
-	Scottie(const std::string &input, const std::string &output, Mode mode, const std::string &greeting = "");
+	Scottie(const std::string &input, const Synthesizer &s, Mode mode, const std::string &greeting = "");
 
 	void Encode();
 

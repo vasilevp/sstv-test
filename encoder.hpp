@@ -21,7 +21,7 @@ protected:
 	uint32_t targetHeight;
 	Synthesizer s;
 
-	Encoder(const std::string &input, const std::string &output, uint8_t visCode);
+	Encoder(const std::string &input, const Synthesizer &s, uint8_t visCode);
 
 	void writeHeader();
 

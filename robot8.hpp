@@ -3,6 +3,7 @@
 
 #include "encoder.hpp"
 
+class Synthesizer;
 class Robot8 : Encoder
 {
 public:
@@ -10,7 +11,7 @@ public:
 		// Input file name.
 		const std::string &input,
 		// Output file name.
-		const std::string &output,
+		const Synthesizer &output,
 		// Whether to send an 8-line calibration gradient at the start.
 		const std::string &greeting = "",
 		// Sync pulse time.

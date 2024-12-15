@@ -25,9 +25,9 @@ public:
 	Synthesizer(const std::string &output, int sample_rate = 8000)
 		: sample_rate(sample_rate),
 		  freq_step(sample_rate / utils::lut.size()),
-		  w(output, sample_rate)
-	{
-	}
+		  w(output, sample_rate) {};
+
+	Synthesizer(const char output[], int sample_rate = 8000) : Synthesizer(std::string(output), sample_rate) {};
 
 	static inline Frequency Lerp(Frequency from, Frequency to, float f)
 	{

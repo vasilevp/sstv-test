@@ -13,7 +13,7 @@ protected:
 		// Input file name.
 		const std::string &input,
 		// Output file name.
-		const std::string &output,
+		const Synthesizer &s,
 		// VIS code.
 		const int vCode,
 		// Scanline length in milliseconds.
@@ -22,7 +22,7 @@ protected:
 		const std::string &greeting,
 		// Send both color bursts at once instead of alternating between scanlines. Used with the slower modes like Robot 72.
 		const bool fullColor)
-		: Encoder(input, output, vCode),
+		: Encoder(input, s, vCode),
 		  lineTime(lineTime),
 		  greeting(greeting),
 		  fullColor(fullColor) {};

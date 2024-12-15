@@ -10,6 +10,7 @@
 #include "martin.hpp"
 #include "scottie.hpp"
 #include "wav.hpp"
+#include "synthesizer.hpp"
 
 using namespace std;
 

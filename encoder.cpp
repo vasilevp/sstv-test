@@ -6,7 +6,7 @@
 
 using namespace std;
 
-Encoder::Encoder(const string &input, const string &output, uint8_t visCode) : visCode(visCode), s(output)
+Encoder::Encoder(const string &input, const Synthesizer &s, uint8_t visCode) : visCode(visCode), s(s)
 {
 	// load BMP
 	auto err = loadbmp_decode_file(input.c_str(), &pixels, &width, &height, LOADBMP_RGB);
