@@ -41,7 +41,7 @@ public:
 
 	constexpr void synth(float length, Frequency freq)
 	{
-		frame += ms2samp(length, sample_rate);
+		frame += ms2samp(length);
 		int newframe = frame;
 		frame -= newframe;
 		while (newframe-- > 0)
@@ -60,7 +60,7 @@ private:
 
 	float frame = 0;
 	int idx = 0;
-	static constexpr float ms2samp(float ms, size_t sample_rate)
+	constexpr float ms2samp(float ms)
 	{
 		return sample_rate * ms / 1000;
 	}

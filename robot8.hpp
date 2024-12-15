@@ -12,20 +12,23 @@ public:
 		// Output file name.
 		const std::string &output,
 		// Whether to send an 8-line calibration gradient at the start.
-		bool sendCalibrationStrip = false,
+		const std::string &greeting = "",
 		// Sync pulse time.
 		float syncTime = 5,
 		// Scanline time.
-		float lineTime = 56)
-		: Encoder(input, output, 1),
-		  greyscaleLines(sendCalibrationStrip ? 8 : 0) {};
+		float lineTime = 56,
+		uint8_t visCode = 1)
+		: Encoder(input, output, visCode),
+		  syncTime(syncTime),
+		  lineTime(lineTime),
+		  greeting(greeting) {};
 
 	void Encode();
 
 private:
-	void writeGreyscale();
+	void writeGreeting();
 
-	const float syncTime = 5;
-	const float lineTime = 56;
-	const size_t greyscaleLines;
+	const float syncTime;
+	const float lineTime;
+	const std::string &greeting;
 };

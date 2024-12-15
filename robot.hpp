@@ -18,23 +18,23 @@ protected:
 		const int vCode,
 		// Scanline length in milliseconds.
 		const float lineTime,
-		// Number of gradient lines to send before the image.
-		const size_t greyscaleLines,
+		// Greeting text.
+		const std::string &greeting,
 		// Send both color bursts at once instead of alternating between scanlines. Used with the slower modes like Robot 72.
-		const bool repeat)
+		const bool fullColor)
 		: Encoder(input, output, vCode),
 		  lineTime(lineTime),
-		  greyscaleLines(greyscaleLines),
-		  repeat(repeat) {};
+		  greeting(greeting),
+		  fullColor(fullColor) {};
 
 private:
-	void writeGreyscale();
+	void writeGreeting();
 
 	// Sync pulse length. Standardized at 9ms for all color Robot modes.
 	static constexpr float syncPulse = 9;
 	// Sync porch length. Standardized at 3ms for all color Robot modes.
 	static constexpr float syncPorch = 3;
-	const bool repeat;
+	const bool fullColor;
 	const float lineTime;
-	const size_t greyscaleLines;
+	const std::string &greeting;
 };

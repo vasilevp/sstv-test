@@ -7,7 +7,13 @@
 class Martin : Encoder
 {
 public:
-	Martin(const std::string &input, const std::string &output, uint8_t mode) : mode(mode), Encoder(input, output, vCode(mode)) {};
+	Martin(const std::string &input,
+		   const std::string &output,
+		   uint8_t mode,
+		   const std::string &greeting = "")
+		: Encoder(input, output, vCode(mode)),
+		  mode(mode),
+		  greeting(greeting) {};
 	void Encode();
 
 private:
@@ -15,6 +21,7 @@ private:
 	const float syncPorch = 0.572;
 	const float lineTime = 73.216f;
 	const uint8_t mode;
+	const std::string &greeting;
 	constexpr uint8_t vCode(const uint8_t mode) const
 	{
 		switch (mode)
@@ -29,5 +36,6 @@ private:
 		}
 	};
 
+	void writeGreeting();
 	void colorLine(int i, size_t color);
 };

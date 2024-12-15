@@ -19,6 +19,9 @@ void Martin::Encode()
 	}
 
 	writeHeader();
+	if (!greeting.empty())
+		writeGreeting();
+
 	const float pixelTime = lineTime * (3 - mode) / width;
 
 	for (size_t i = 0; i < height; ++i)
@@ -33,21 +36,8 @@ void Martin::Encode()
 		// separator
 		s.synth(syncPorch, SyncPorch);
 	}
-
-	// padding for reference
-	for (size_t i = height; i < 256; ++i)
-	{
-		// sync pulse
-		s.synth(syncPulse, SyncPulse);
-
-		colorLine(height - 1, 1);
-		colorLine(height - 1, 2);
-		colorLine(height - 1, 0);
-
-		// separator
-		s.synth(syncPorch, SyncPorch);
-	}
 }
+
 void Martin::colorLine(int i, size_t color)
 {
 	const float pixelTime = lineTime * (3 - mode) / width;
@@ -65,3 +55,33 @@ void Martin::colorLine(int i, size_t color)
 		s.synth(pixelTime, freq);
 	}
 };
+
+void Martin::writeGreeting()
+{
+	const float pixelTime = lineTime * (3 - mode) / width;
+
+	auto textline = [&](int i)
+	{
+		// sync porch
+		s.synth(syncPorch, Frequency::SyncPorch);
+
+		for (size_t j = 0; j < width; ++j)
+		{
+			auto set = utils::getText(i, j, 2, greeting);
+			s.synth(pixelTime, set ? White : Black);
+		}
+	};
+
+	for (size_t i = 0; i < 16; ++i)
+	{
+		// sync pulse
+		s.synth(syncPulse, SyncPulse);
+
+		textline(i);
+		textline(i);
+		textline(i);
+
+		// separator
+		s.synth(syncPorch, SyncPorch);
+	}
+}

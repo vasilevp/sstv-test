@@ -5,8 +5,6 @@
 
 #include "utils.hpp"
 
-#include "LoadBMP/loadbmp.h"
-
 void Robot8::Encode()
 {
 	if ((height % 120) != 0)
@@ -16,7 +14,8 @@ void Robot8::Encode()
 
 	writeHeader();
 
-	writeGreyscale();
+	if (!greeting.empty())
+		writeGreeting();
 
 	const float pixelTime = lineTime / width;
 	const int stride = height / 120;
@@ -37,25 +36,24 @@ void Robot8::Encode()
 	}
 }
 
-void Robot8::writeGreyscale()
+void Robot8::writeGreeting()
 {
-	const float syncTime = 5;
-	const float pixelTime = 56.0f / width;
+	const float pixelTime = lineTime / width;
 
-	for (size_t i = 0; i < 8; ++i)
+	auto textLine = [&](auto i)
 	{
 		// sync pulse
 		s.synth(syncTime, SyncPulse);
 
 		for (size_t j = 0; j < width; ++j)
 		{
-			size_t offset = (i * width + j) * 3;
-			float val = float(j) / width;
-
-			auto freq = Synthesizer::Lerp(val);
-
-			// pixel
-			s.synth(pixelTime, freq);
+			auto set = utils::getText(i, j, 1, greeting);
+			s.synth(pixelTime, set ? White : Black);
 		}
+	};
+
+	for (size_t i = 0; i < 8; ++i)
+	{
+		textLine(i);
 	}
 }

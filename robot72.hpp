@@ -11,11 +11,11 @@ public:
 		const std::string &input,
 		// Output file name.
 		const std::string &output,
-		// Whether to send a 16-line calibration gradient at the start.
-		bool sendCalibrationStrip = false)
-		: Robot(input, output, 12, lineTime, sendCalibrationStrip ? greyscaleLines : 0, true) {};
+		// Greeting text.
+		const std::string &greeting = "")
+		: Robot(input, output, 12, lineTime, greeting, true) {};
 
 private:
 	static constexpr float lineTime = 138;
-	static constexpr int greyscaleLines = 16;
+	static constexpr int greetingLines = 16;
 };

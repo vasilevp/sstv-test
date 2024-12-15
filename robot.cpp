@@ -17,7 +17,8 @@ void Robot::Encode()
 	writeHeader();
 	const float pixelTime = lineTime / width;
 
-	writeGreyscale();
+	if (!greeting.empty())
+		writeGreeting();
 
 	for (size_t i = 0; i < height; ++i)
 	{
@@ -35,9 +36,9 @@ void Robot::Encode()
 			s.synth(pixelTime, freq);
 		}
 
-		// if repeat is set, this loop will send both colors at once
+		// if fullColor is set, this loop will send both colors at once
 		// otherwise, for even scanlines send Cr (R-Y) and for odd scanlines send Cb (B-Y)
-		for (size_t r = 0; r <= repeat; r++)
+		for (size_t r = 0; r <= fullColor; r++)
 		{
 			// choose red or blue based on scanline
 			bool isRedBurst = i % 2 == 0;
@@ -45,7 +46,7 @@ void Robot::Encode()
 			auto shift = isRedBurst ? 1 : -1;
 
 			// if both bursts need to be sent at the same time,...
-			if (repeat)
+			if (fullColor)
 			{
 				// first pass is red, second is blue
 				isRedBurst = r == 0;
@@ -53,13 +54,12 @@ void Robot::Encode()
 				shift = 0;
 			}
 
-			auto getChroma = (isRedBurst ? getChromaRed : GetChromaBlue);
-
 			// red/blue sync pulse
 			s.synth(syncPulse / 2, isRedBurst ? Black : White);
 			// porch
 			s.synth(syncPorch / 2, Grey);
 
+			auto getChroma = (isRedBurst ? getChromaRed : GetChromaBlue);
 			for (size_t j = 0; j < width; ++j)
 			{
 				// get current pixel chroma, averaging between two lines if needed
@@ -74,11 +74,11 @@ void Robot::Encode()
 	}
 }
 
-void Robot::writeGreyscale()
+void Robot::writeGreeting()
 {
 	const float pixelTime = lineTime / width;
 
-	for (size_t i = 0; i < greyscaleLines; ++i)
+	for (size_t i = 0; i < 16; ++i)
 	{
 		// sync pulse
 		s.synth(syncPulse, SyncPulse);
@@ -87,17 +87,14 @@ void Robot::writeGreyscale()
 		// line
 		for (size_t j = 0; j < width; ++j)
 		{
-			float Y = float(j * 255) / width;
-			auto freq = Synthesizer::Lerp(Y / 255);
-
-			// pixel
-			s.synth(pixelTime, freq);
+			auto set = utils::getText(i, j, 2, greeting);
+			s.synth(pixelTime, set ? White : Black);
 		}
 
-		for (size_t k = 0; k <= repeat; k++)
+		for (size_t k = 0; k <= fullColor; k++)
 		{
 			bool even = i % 2 == 0;
-			if (repeat)
+			if (fullColor)
 			{
 				even = k == 0;
 			}
