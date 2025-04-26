@@ -23,5 +23,5 @@ private:
 	const std::string &greeting;
 	const float syncTime = 9;
 	float lineTime = 88.064;
-	void colorLine(int i, size_t color);
+	void colorLine(uint32_t i, size_t color);
 };

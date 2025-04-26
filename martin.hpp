@@ -1,6 +1,7 @@
 #pragma once
-#include <string>
+#include <cstdint>
 #include <stdexcept>
+#include <string>
 
 #include "encoder.hpp"
 
@@ -37,5 +38,5 @@ private:
 	};
 
 	void writeGreeting();
-	void colorLine(int i, size_t color);
+	void colorLine(uint32_t i, size_t color);
 };

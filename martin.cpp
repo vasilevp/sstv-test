@@ -1,13 +1,11 @@
 #include "martin.hpp"
+#include "synthesizer.hpp"
+#include "utils.hpp"
 
-#include <stdexcept>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <print>
-
-#include "utils.hpp"
-
-#include <LoadBMP/loadbmp.h>
 
 using namespace std;
 
@@ -22,9 +20,7 @@ void Martin::Encode()
 	if (!greeting.empty())
 		writeGreeting();
 
-	const float pixelTime = lineTime * (3 - mode) / width;
-
-	for (size_t i = 0; i < height; ++i)
+	for (uint32_t i = 0; i < height; ++i)
 	{
 		// sync pulse
 		s.synth(syncPulse, SyncPulse);
@@ -38,17 +34,17 @@ void Martin::Encode()
 	}
 }
 
-void Martin::colorLine(int i, size_t color)
+void Martin::colorLine(uint32_t i, size_t color)
 {
-	const float pixelTime = lineTime * (3 - mode) / width;
+	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
 	// sync porch
 	s.synth(syncPorch, Frequency::SyncPorch);
 
 	for (size_t j = 0; j < width; ++j)
 	{
-		size_t offset = (i * width + j) * 3;
-		float c = pixels[offset + color];
+		const size_t offset = (i * width + j) * 3;
+		const float c = pixels[offset + color];
 		auto freq = Synthesizer::Lerp(c / 255);
 
 		// pixel
@@ -58,7 +54,7 @@ void Martin::colorLine(int i, size_t color)
 
 void Martin::writeGreeting()
 {
-	const float pixelTime = lineTime * (3 - mode) / width;
+	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
 	auto textline = [&](int i)
 	{
@@ -72,7 +68,7 @@ void Martin::writeGreeting()
 		}
 	};
 
-	for (size_t i = 0; i < 16; ++i)
+	for (auto i = 0; i < 16; ++i)
 	{
 		// sync pulse
 		s.synth(syncPulse, SyncPulse);

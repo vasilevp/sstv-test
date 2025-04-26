@@ -18,13 +18,17 @@ AM_CPPFLAGS = -I$(srcdir) -I$(builddir) -I$(srcdir)/modules
 
 # Integrate clang-tidy
 CLANG_TIDY = clang-tidy
-CLANG_TIDY_CHECKS = -checks=-*,modernize-*,readability-*
+CLANG_TIDY_CHECKS = -checks=-*,modernize-*,performance-*,bugprone-*,clang-analyzer-*,misc-*,portability-*,llvm-*,cert-*,concurrency-*,-misc-const-correctness
 
-# Run clang-tidy on source files
-tidy:
-	$(CLANG_TIDY) $(CLANG_TIDY_CHECKS) $(sstv_SOURCES) -- $(AM_CPPFLAGS) $(AM_CXXFLAGS)
+# Define a rule for each source file
+.PHONY: tidy
+tidy: $(sstv_SOURCES:.cpp=.tidy)
 
-CLEANFILES = build/*.o *.exe
+.PHONY: %.tidy
+%.tidy: %.cpp
+	$(CLANG_TIDY) $(CLANG_TIDY_CHECKS) $< -- $(AM_CPPFLAGS) $(AM_CXXFLAGS)
+
+CLEANFILES = *.o *.exe *.tidy
 
 distclean-local:
 	rm -rf aclocal.m4 autom4te.cache config.log config.status configure depcomp install-sh Makefile.in missing compile

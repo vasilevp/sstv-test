@@ -1,8 +1,12 @@
 #include "scottie.hpp"
 
-#include <stdexcept>
+#include <cstddef>
 #include <cstdint>
+#include <stdexcept>
+#include <string>
 
+#include "encoder.hpp"
+#include "synthesizer.hpp"
 #include "utils.hpp"
 
 Scottie::Scottie(
@@ -48,9 +52,7 @@ void Scottie::Encode()
 		writeGreeting();
 	}
 
-	const float pixelTime = lineTime / width;
-
-	for (size_t i = 0; i < height; i++)
+	for (uint32_t i = 0; i < height; i++)
 	{
 		colorLine(i, 1);
 		colorLine(i, 2);
@@ -62,9 +64,9 @@ void Scottie::Encode()
 	}
 }
 
-void Scottie::colorLine(int i, size_t color)
+void Scottie::colorLine(uint32_t i, size_t color)
 {
-	const float pixelTime = lineTime / width;
+	const float pixelTime = lineTime / float(width);
 
 	// sync porch
 	s.synth(1.5, Frequency::SyncPorch);
@@ -82,7 +84,7 @@ void Scottie::colorLine(int i, size_t color)
 
 void Scottie::writeGreeting()
 {
-	const float pixelTime = lineTime / width;
+	const float pixelTime = lineTime / float(width);
 
 	auto textLine = [&](auto i)
 	{

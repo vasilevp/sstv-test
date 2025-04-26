@@ -1,6 +1,10 @@
 #include "encoder.hpp"
+#include "synthesizer.hpp"
 
+#include <cstdint>
+#include <cstdlib>
 #include <stdexcept>
+#include <string>
 
 #include <LoadBMP/loadbmp.h>
 
@@ -46,7 +50,6 @@ void Encoder::writeHeader()
 	}
 
 	parity ^= code;
-	code >>= 1;
 
 	// parity bit
 	s.synth(30, (parity & 1) ? VISOne : VISZero);

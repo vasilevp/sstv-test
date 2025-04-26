@@ -1,15 +1,10 @@
-#include <cstdint>
-#include <iostream>
-#include <functional>
-#include <cmath>
-#include <vector>
+#include <print>
 
-#include "robot8.hpp"
+#include "martin.hpp"
 #include "robot36.hpp"
 #include "robot72.hpp"
-#include "martin.hpp"
+#include "robot8.hpp"
 #include "scottie.hpp"
-#include "wav.hpp"
 #include "synthesizer.hpp"
 
 using namespace std;

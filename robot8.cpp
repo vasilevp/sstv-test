@@ -1,8 +1,9 @@
 #include "robot8.hpp"
 
+#include <cstddef>
 #include <stdexcept>
-#include <cstdint>
 
+#include "synthesizer.hpp"
 #include "utils.hpp"
 
 void Robot8::Encode()
@@ -17,8 +18,8 @@ void Robot8::Encode()
 	if (!greeting.empty())
 		writeGreeting();
 
-	const float pixelTime = lineTime / width;
-	const int stride = height / 120;
+	const float pixelTime = lineTime / float(width);
+	const int stride = int(float(height) / 120);
 
 	for (size_t i = 0; i < height; i += stride)
 	{
@@ -38,7 +39,7 @@ void Robot8::Encode()
 
 void Robot8::writeGreeting()
 {
-	const float pixelTime = lineTime / width;
+	const float pixelTime = lineTime / float(width);
 
 	auto textLine = [&](auto i)
 	{

@@ -1,11 +1,10 @@
-#include "robot36.hpp"
+#include "robot.hpp"
 
+#include <cstddef>
 #include <stdexcept>
-#include <cstdint>
 
+#include "synthesizer.hpp"
 #include "utils.hpp"
-
-#include <LoadBMP/loadbmp.h>
 
 void Robot::Encode()
 {
@@ -15,7 +14,7 @@ void Robot::Encode()
 	}
 
 	writeHeader();
-	const float pixelTime = lineTime / width;
+	const float pixelTime = lineTime / float(width);
 
 	if (!greeting.empty())
 		writeGreeting();
@@ -76,7 +75,7 @@ void Robot::Encode()
 
 void Robot::writeGreeting()
 {
-	const float pixelTime = lineTime / width;
+	const float pixelTime = lineTime / float(width);
 
 	for (size_t i = 0; i < 16; ++i)
 	{
@@ -103,7 +102,7 @@ void Robot::writeGreeting()
 			// sync porch
 			s.synth(syncPorch / 2, Grey);
 			// line
-			s.synth(pixelTime / 2 * width, Grey);
+			s.synth(pixelTime / 2 * float(width), Grey);
 		}
 	}
 }
