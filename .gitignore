@@ -5,5 +5,23 @@
 *.o
 a.out
 *.exe
+*.a
 
 .vscode/
+
+# Automake generated files
+Makefile.in
+Makefile
+aclocal.m4
+autom4te.cache/
+configure
+config.log
+config.status
+depcomp
+install-sh
+missing
+compile
+.deps/
+Makefile
+config.cache
+configure~

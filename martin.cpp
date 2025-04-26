@@ -7,7 +7,7 @@
 
 #include "utils.hpp"
 
-#include "modules/LoadBMP/loadbmp.h"
+#include <LoadBMP/loadbmp.h>
 
 using namespace std;
 
