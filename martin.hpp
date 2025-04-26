@@ -23,7 +23,7 @@ private:
 	const float lineTime = 73.216f;
 	const uint8_t mode;
 	const std::string &greeting;
-	constexpr uint8_t vCode(const uint8_t mode) const
+	inline static constexpr uint8_t vCode(const uint8_t mode)
 	{
 		switch (mode)
 		{
@@ -37,6 +37,6 @@ private:
 		}
 	};
 
-	void writeGreeting() noexcept;
-	void colorLine(uint32_t i, size_t color) noexcept;
+	void writeGreeting();
+	void colorLine(uint32_t i, size_t color);
 };

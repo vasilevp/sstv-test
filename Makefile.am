@@ -1,7 +1,9 @@
 bin_PROGRAMS = sstv
 sstv_SOURCES = main.cpp loadbmp.cpp encoder.cpp robot8.cpp robot.cpp martin.cpp scottie.cpp
-AM_CXXFLAGS = --std=c++23
-AM_CFLAGS = --std=c23
+
+# Enable C++23 and LTO
+AM_CXXFLAGS = --std=c++23 -O3 -flto
+AM_CFLAGS = --std=c23 -O3 -flto
 
 # Build a static library for modules/C-Wav-Lib
 noinst_LIBRARIES = libwav.a

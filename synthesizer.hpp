@@ -29,17 +29,17 @@ public:
 
 	Synthesizer(const char output[], int sample_rate = 8000) : Synthesizer(std::string(output), sample_rate) {};
 
-	static inline Frequency Lerp(Frequency from, Frequency to, float f) noexcept
+	inline static constexpr Frequency Lerp(Frequency from, Frequency to, float f)
 	{
 		return Frequency(from + Frequency(float(to - from) * f));
 	}
 
-	static inline Frequency Lerp(float f) noexcept
+	inline static constexpr Frequency Lerp(float f)
 	{
 		return Lerp(Black, White, f);
 	}
 
-	constexpr void Synth(float length, Frequency freq) noexcept
+	inline constexpr void Synth(float length, Frequency freq)
 	{
 		frame += ms2samp(length);
 		int newframe = frame;
@@ -60,7 +60,7 @@ private:
 
 	float frame = 0;
 	int idx = 0;
-	constexpr float ms2samp(float ms) noexcept
+	inline constexpr float ms2samp(float ms)
 	{
 		return sample_rate * ms / 1000;
 	}

@@ -34,7 +34,7 @@ void Martin::Encode()
 	}
 }
 
-void Martin::colorLine(uint32_t i, size_t color) noexcept
+void Martin::colorLine(uint32_t i, size_t color)
 {
 	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
@@ -52,7 +52,7 @@ void Martin::colorLine(uint32_t i, size_t color) noexcept
 	}
 };
 
-void Martin::writeGreeting() noexcept
+void Martin::writeGreeting()
 {
 	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
