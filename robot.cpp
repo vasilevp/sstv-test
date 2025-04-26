@@ -22,9 +22,9 @@ void Robot::Encode()
 	for (size_t i = 0; i < height; ++i)
 	{
 		// sync pulse
-		s.synth(syncPulse, Frequency::SyncPulse);
+		s.Synth(syncPulse, Frequency::SyncPulse);
 		// sync porch
-		s.synth(syncPorch, Frequency::SyncPorch);
+		s.Synth(syncPorch, Frequency::SyncPorch);
 
 		for (size_t j = 0; j < width; ++j)
 		{
@@ -32,7 +32,7 @@ void Robot::Encode()
 			float Y = getY(pixels, offset);
 			auto freq = Synthesizer::Lerp(Y / 255);
 			// pixel
-			s.synth(pixelTime, freq);
+			s.Synth(pixelTime, freq);
 		}
 
 		// if fullColor is set, this loop will send both colors at once
@@ -54,9 +54,9 @@ void Robot::Encode()
 			}
 
 			// red/blue sync pulse
-			s.synth(syncPulse / 2, isRedBurst ? Black : White);
+			s.Synth(syncPulse / 2, isRedBurst ? Black : White);
 			// porch
-			s.synth(syncPorch / 2, Grey);
+			s.Synth(syncPorch / 2, Grey);
 
 			auto getChroma = (isRedBurst ? getChromaRed : GetChromaBlue);
 			for (size_t j = 0; j < width; ++j)
@@ -67,7 +67,7 @@ void Robot::Encode()
 				auto freq = Synthesizer::Lerp((c1 + c2) / 2 / 255);
 
 				// send pixel
-				s.synth(pixelTime / 2, freq);
+				s.Synth(pixelTime / 2, freq);
 			}
 		}
 	}
@@ -80,14 +80,14 @@ void Robot::writeGreeting()
 	for (size_t i = 0; i < 16; ++i)
 	{
 		// sync pulse
-		s.synth(syncPulse, SyncPulse);
+		s.Synth(syncPulse, SyncPulse);
 		// sync porch
-		s.synth(syncPorch, SyncPorch);
+		s.Synth(syncPorch, SyncPorch);
 		// line
 		for (size_t j = 0; j < width; ++j)
 		{
 			auto set = utils::getText(i, j, 2, greeting);
-			s.synth(pixelTime, set ? White : Black);
+			s.Synth(pixelTime, set ? White : Black);
 		}
 
 		for (size_t k = 0; k <= fullColor; k++)
@@ -98,11 +98,11 @@ void Robot::writeGreeting()
 				even = k == 0;
 			}
 
-			s.synth(syncPulse / 2, even ? Black : White);
+			s.Synth(syncPulse / 2, even ? Black : White);
 			// sync porch
-			s.synth(syncPorch / 2, Grey);
+			s.Synth(syncPorch / 2, Grey);
 			// line
-			s.synth(pixelTime / 2 * float(width), Grey);
+			s.Synth(pixelTime / 2 * float(width), Grey);
 		}
 	}
 }

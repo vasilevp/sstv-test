@@ -30,20 +30,20 @@ void Encoder::writeHeader()
 {
 	// sstv header
 	// calibration pulse
-	s.synth(300, Grey);
-	s.synth(10, SyncPulse);
-	s.synth(300, Grey);
+	s.Synth(300, Grey);
+	s.Synth(10, SyncPulse);
+	s.Synth(300, Grey);
 
 	// VIS code
 	// start/stop marker
-	s.synth(30, SyncPulse);
+	s.Synth(30, SyncPulse);
 
 	// 8 => 0b1000 => 0 0 0 1 0 0 0
 	auto code = visCode;
 	uint8_t parity = 0;
 	for (auto i = 0; i < 7; i++)
 	{
-		s.synth(30, (code & 1) ? VISOne : VISZero);
+		s.Synth(30, (code & 1) ? VISOne : VISZero);
 
 		parity ^= code;
 		code >>= 1;
@@ -52,8 +52,8 @@ void Encoder::writeHeader()
 	parity ^= code;
 
 	// parity bit
-	s.synth(30, (parity & 1) ? VISOne : VISZero);
+	s.Synth(30, (parity & 1) ? VISOne : VISZero);
 
 	// start/stop marker
-	s.synth(30, SyncPulse);
+	s.Synth(30, SyncPulse);
 }

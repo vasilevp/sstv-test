@@ -37,6 +37,6 @@ private:
 		}
 	};
 
-	void writeGreeting();
-	void colorLine(uint32_t i, size_t color);
+	void writeGreeting() noexcept;
+	void colorLine(uint32_t i, size_t color) noexcept;
 };

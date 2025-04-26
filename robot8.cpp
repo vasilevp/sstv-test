@@ -24,7 +24,7 @@ void Robot8::Encode()
 	for (size_t i = 0; i < height; i += stride)
 	{
 		// sync pulse
-		s.synth(syncTime, SyncPulse);
+		s.Synth(syncTime, SyncPulse);
 
 		for (size_t j = 0; j < width; ++j)
 		{
@@ -32,7 +32,7 @@ void Robot8::Encode()
 			float Y = getY(pixels, offset);
 
 			// pixel
-			s.synth(pixelTime, s.Lerp(Y / 255));
+			s.Synth(pixelTime, s.Lerp(Y / 255));
 		}
 	}
 }
@@ -44,12 +44,12 @@ void Robot8::writeGreeting()
 	auto textLine = [&](auto i)
 	{
 		// sync pulse
-		s.synth(syncTime, SyncPulse);
+		s.Synth(syncTime, SyncPulse);
 
 		for (size_t j = 0; j < width; ++j)
 		{
 			auto set = utils::getText(i, j, 1, greeting);
-			s.synth(pixelTime, set ? White : Black);
+			s.Synth(pixelTime, set ? White : Black);
 		}
 	};
 

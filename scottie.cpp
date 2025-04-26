@@ -45,7 +45,7 @@ void Scottie::Encode()
 	writeHeader();
 
 	// sync pulse
-	s.synth(syncTime, SyncPulse);
+	s.Synth(syncTime, SyncPulse);
 
 	if (height < 256 || !greeting.empty())
 	{
@@ -58,7 +58,7 @@ void Scottie::Encode()
 		colorLine(i, 2);
 
 		// sync pulse
-		s.synth(syncTime, SyncPulse);
+		s.Synth(syncTime, SyncPulse);
 
 		colorLine(i, 0);
 	}
@@ -69,7 +69,7 @@ void Scottie::colorLine(uint32_t i, size_t color)
 	const float pixelTime = lineTime / float(width);
 
 	// sync porch
-	s.synth(1.5, Frequency::SyncPorch);
+	s.Synth(1.5, Frequency::SyncPorch);
 
 	for (size_t j = 0; j < width; ++j)
 	{
@@ -78,7 +78,7 @@ void Scottie::colorLine(uint32_t i, size_t color)
 		auto freq = Synthesizer::Lerp(c / 255);
 
 		// pixel
-		s.synth(pixelTime, freq);
+		s.Synth(pixelTime, freq);
 	}
 };
 
@@ -88,11 +88,11 @@ void Scottie::writeGreeting()
 
 	auto textLine = [&](auto i)
 	{
-		s.synth(1.5, Frequency::SyncPorch);
+		s.Synth(1.5, Frequency::SyncPorch);
 		for (size_t j = 0; j < width; ++j)
 		{
 			auto set = utils::getText(i, j, 2, greeting);
-			s.synth(pixelTime, set ? White : Black);
+			s.Synth(pixelTime, set ? White : Black);
 		}
 	};
 
@@ -102,7 +102,7 @@ void Scottie::writeGreeting()
 		textLine(i);
 
 		// sync pulse
-		s.synth(syncTime, SyncPulse);
+		s.Synth(syncTime, SyncPulse);
 
 		textLine(i);
 	}

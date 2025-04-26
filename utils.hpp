@@ -1,8 +1,8 @@
 #pragma once
-#include <cstdlib>
-#include <cstdint>
-#include <memory>
 #include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
 
 #include "font8x8_basic.h"
 
@@ -16,7 +16,7 @@ namespace utils
 #include "sine.txt"
 	});
 
-	static inline constexpr bool getText(size_t i, size_t j, size_t size, const std::string &text)
+	static inline constexpr bool getText(size_t i, size_t j, size_t size, const std::string &text) noexcept
 	{
 		auto character = j / 8 / size - 1;
 		if (character < 0 || character >= text.size())

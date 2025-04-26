@@ -23,23 +23,23 @@ void Martin::Encode()
 	for (uint32_t i = 0; i < height; ++i)
 	{
 		// sync pulse
-		s.synth(syncPulse, SyncPulse);
+		s.Synth(syncPulse, SyncPulse);
 
 		colorLine(i, 1);
 		colorLine(i, 2);
 		colorLine(i, 0);
 
 		// separator
-		s.synth(syncPorch, SyncPorch);
+		s.Synth(syncPorch, SyncPorch);
 	}
 }
 
-void Martin::colorLine(uint32_t i, size_t color)
+void Martin::colorLine(uint32_t i, size_t color) noexcept
 {
 	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
 	// sync porch
-	s.synth(syncPorch, Frequency::SyncPorch);
+	s.Synth(syncPorch, Frequency::SyncPorch);
 
 	for (size_t j = 0; j < width; ++j)
 	{
@@ -48,36 +48,36 @@ void Martin::colorLine(uint32_t i, size_t color)
 		auto freq = Synthesizer::Lerp(c / 255);
 
 		// pixel
-		s.synth(pixelTime, freq);
+		s.Synth(pixelTime, freq);
 	}
 };
 
-void Martin::writeGreeting()
+void Martin::writeGreeting() noexcept
 {
 	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
 	auto textline = [&](int i)
 	{
 		// sync porch
-		s.synth(syncPorch, Frequency::SyncPorch);
+		s.Synth(syncPorch, Frequency::SyncPorch);
 
 		for (size_t j = 0; j < width; ++j)
 		{
 			auto set = utils::getText(i, j, 2, greeting);
-			s.synth(pixelTime, set ? White : Black);
+			s.Synth(pixelTime, set ? White : Black);
 		}
 	};
 
 	for (auto i = 0; i < 16; ++i)
 	{
 		// sync pulse
-		s.synth(syncPulse, SyncPulse);
+		s.Synth(syncPulse, SyncPulse);
 
 		textline(i);
 		textline(i);
 		textline(i);
 
 		// separator
-		s.synth(syncPorch, SyncPorch);
+		s.Synth(syncPorch, SyncPorch);
 	}
 }

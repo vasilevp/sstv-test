@@ -1,6 +1,6 @@
 #pragma once
-#include <stdint.h>
 #include <cmath>
+#include <stdint.h>
 
 #include "utils.hpp"
 #include "wav.hpp"
@@ -29,17 +29,17 @@ public:
 
 	Synthesizer(const char output[], int sample_rate = 8000) : Synthesizer(std::string(output), sample_rate) {};
 
-	static inline Frequency Lerp(Frequency from, Frequency to, float f)
+	static inline Frequency Lerp(Frequency from, Frequency to, float f) noexcept
 	{
 		return Frequency(from + Frequency(float(to - from) * f));
 	}
 
-	static inline Frequency Lerp(float f)
+	static inline Frequency Lerp(float f) noexcept
 	{
 		return Lerp(Black, White, f);
 	}
 
-	constexpr void synth(float length, Frequency freq)
+	constexpr void Synth(float length, Frequency freq) noexcept
 	{
 		frame += ms2samp(length);
 		int newframe = frame;
@@ -60,7 +60,7 @@ private:
 
 	float frame = 0;
 	int idx = 0;
-	constexpr float ms2samp(float ms)
+	constexpr float ms2samp(float ms) noexcept
 	{
 		return sample_rate * ms / 1000;
 	}
