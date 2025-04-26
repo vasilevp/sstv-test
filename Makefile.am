@@ -1,9 +1,18 @@
 bin_PROGRAMS = sstv
-sstv_SOURCES = main.cpp loadbmp.cpp encoder.cpp robot8.cpp robot.cpp martin.cpp scottie.cpp
 
-# Enable C++23 and LTO
-AM_CXXFLAGS = --std=c++23 -O3 -flto
-AM_CFLAGS = --std=c23 -O3 -flto
+sstv_SOURCES = src/encoder/main.cpp \
+			   src/encoder/encoder.cpp \
+			   src/encoder/loadbmp.cpp \
+			   src/encoder/robot8.cpp \
+			   src/encoder/robot.cpp \
+			   src/encoder/martin.cpp \
+			   src/encoder/scottie.cpp
+
+# Enable C++23 and C23 standards
+AM_CXXFLAGS = --std=c++23
+AM_CFLAGS = --std=c23
+# Add include paths for libraries
+AM_CPPFLAGS = -O3 -flto -I$(srcdir)/src -I$(builddir) -I$(srcdir)/modules
 
 # Build a static library for modules/C-Wav-Lib
 noinst_LIBRARIES = libwav.a
@@ -14,9 +23,6 @@ sstv_LDADD = libwav.a
 
 # Specify the directory for object files
 DEPDIR = $(srcdir)/.deps
-
-# Add include paths for libraries
-AM_CPPFLAGS = -I$(srcdir) -I$(builddir) -I$(srcdir)/modules
 
 # Integrate clang-tidy
 CLANG_TIDY = clang-tidy
@@ -29,8 +35,5 @@ tidy: $(sstv_SOURCES:.cpp=.tidy)
 .PHONY: %.tidy
 %.tidy: %.cpp
 	$(CLANG_TIDY) $(CLANG_TIDY_CHECKS) $< -- $(AM_CPPFLAGS) $(AM_CXXFLAGS)
-
-CLEANFILES = *.o *.exe *.tidy
-
-distclean-local:
-	rm -rf aclocal.m4 autom4te.cache config.log config.status configure depcomp install-sh Makefile.in missing compile
+	@echo "clang-tidy check completed for $<"
+	@echo "----------------------------------------"
