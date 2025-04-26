@@ -4,7 +4,7 @@
 
 extern "C"
 {
-#include "C-Wav-Lib/wav.h"
+#include "modules/C-Wav-Lib/wav.h"
 };
 
 class WAVWriter

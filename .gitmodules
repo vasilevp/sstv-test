@@ -1,6 +1,6 @@
 [submodule "C-Wav-Lib"]
-	path = C-Wav-Lib
+	path = modules/C-Wav-Lib
 	url = git@github.com:gehaxelt/C-Wav-Lib.git
 [submodule "LoadBMP"]
-	path = LoadBMP
+	path = modules/LoadBMP
 	url = git@github.com:MrVallentin/LoadBMP.git

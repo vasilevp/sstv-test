@@ -14,13 +14,13 @@ clean:
 	${ECHO}
 	rm -f *.o *.exe
 
-endianness.o: C-Wav-Lib/endianness.c C-Wav-Lib/endianness.h
+endianness.o: modules/C-Wav-Lib/endianness.c modules/C-Wav-Lib/endianness.h
 	${ECHO}
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o endianness.o C-Wav-Lib/endianness.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o endianness.o modules/C-Wav-Lib/endianness.c
 
-wav.o: C-Wav-Lib/*
+wav.o: modules/C-Wav-Lib/*
 	${ECHO}
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o wav.o C-Wav-Lib/wav.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o wav.o modules/C-Wav-Lib/wav.c
 
 main.o:	main.cpp *.hpp
 	${ECHO}

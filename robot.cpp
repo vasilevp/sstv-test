@@ -5,7 +5,7 @@
 
 #include "utils.hpp"
 
-#include "LoadBMP/loadbmp.h"
+#include "modules/LoadBMP/loadbmp.h"
 
 void Robot::Encode()
 {
