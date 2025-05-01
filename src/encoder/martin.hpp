@@ -12,9 +12,12 @@ public:
 		   Synthesizer &&s,
 		   uint8_t mode,
 		   const std::string &greeting = "")
-		: Encoder(input, s, vCode(mode)),
+		: Encoder(input, std::move(s), vCode(mode)),
 		  mode(mode),
-		  greeting(greeting) {};
+		  greeting(greeting)
+	{
+		utils::Guard();
+	};
 	void Encode();
 
 private:
@@ -25,6 +28,8 @@ private:
 	const std::string &greeting;
 	inline static constexpr uint8_t vCode(const uint8_t mode)
 	{
+		utils::Guard();
+
 		switch (mode)
 		{
 		case 1:

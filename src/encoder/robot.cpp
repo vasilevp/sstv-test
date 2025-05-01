@@ -8,6 +8,8 @@
 
 void Robot::Encode()
 {
+	utils::Guard();
+
 	if (height != 240)
 	{
 		throw std::runtime_error("Image height must be 240 pixels!");
@@ -75,6 +77,8 @@ void Robot::Encode()
 
 void Robot::writeGreeting()
 {
+	utils::Guard();
+
 	const float pixelTime = lineTime / float(width);
 
 	for (size_t i = 0; i < 16; ++i)

@@ -25,3 +25,4 @@ compile
 Makefile
 config.cache
 configure~
+.dirstamp

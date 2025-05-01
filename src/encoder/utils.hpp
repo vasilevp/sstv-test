@@ -1,12 +1,15 @@
 #pragma once
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <print>
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
 #define DEFER(x) std::shared_ptr<void> CONCAT(_defer___, __COUNTER__)(nullptr, [&](auto) { x; });
+#define Guard() ScopeGuard CONCAT(__scope_, __COUNTER__)(__PRETTY_FUNCTION__)
 
 namespace utils
 {
@@ -37,4 +40,13 @@ namespace utils
 		return set;
 	}
 
+	class ScopeGuard
+	{
+		static std::atomic<int> globalIndent;
+		const std::string function;
+
+	public:
+		ScopeGuard(const std::string &function);
+		~ScopeGuard();
+	};
 }

@@ -11,7 +11,7 @@ public:
 		// Input file name.
 		const std::string &input,
 		// Output file name.
-		const Synthesizer &output,
+		Synthesizer &&output,
 		// Whether to send an 8-line calibration gradient at the start.
 		const std::string &greeting = "",
 		// Sync pulse time.
@@ -19,10 +19,13 @@ public:
 		// Scanline time.
 		float lineTime = 56,
 		uint8_t visCode = 1)
-		: Encoder(input, output, visCode),
+		: Encoder(input, std::move(output), visCode),
 		  syncTime(syncTime),
 		  lineTime(lineTime),
-		  greeting(greeting) {};
+		  greeting(greeting)
+	{
+		utils::Guard();
+	};
 
 	void Encode();
 

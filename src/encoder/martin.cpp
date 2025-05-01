@@ -11,6 +11,8 @@ using namespace std;
 
 void Martin::Encode()
 {
+	utils::Guard();
+
 	if (height != 256)
 	{
 		print(cerr, "WARN: Image height must be 256 pixels! Provided height of {} may cause issues with the receiver.", height);
@@ -54,6 +56,8 @@ void Martin::colorLine(uint32_t i, size_t color)
 
 void Martin::writeGreeting()
 {
+	utils::Guard();
+
 	const float pixelTime = lineTime * float(3 - mode) / float(width);
 
 	auto textline = [&](int i)

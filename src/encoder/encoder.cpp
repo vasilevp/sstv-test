@@ -10,8 +10,10 @@
 
 using namespace std;
 
-Encoder::Encoder(const string &input, const Synthesizer &s, uint8_t visCode) : visCode(visCode), s(s)
+Encoder::Encoder(const string &input, Synthesizer &&s, uint8_t visCode) : visCode(visCode), s(std::move(s)), pixels(nullptr)
 {
+	utils::Guard();
+
 	// load BMP
 	auto err = loadbmp_decode_file(input.c_str(), &pixels, &width, &height, LOADBMP_RGB);
 
@@ -23,11 +25,19 @@ Encoder::Encoder(const string &input, const Synthesizer &s, uint8_t visCode) : v
 
 Encoder::~Encoder()
 {
-	free(pixels);
+	utils::Guard();
+
+	if (pixels)
+	{
+		free(pixels);
+		pixels = nullptr;
+	}
 }
 
 void Encoder::writeHeader()
 {
+	utils::Guard();
+
 	// sstv header
 	// calibration pulse
 	s.Synth(300, Grey);

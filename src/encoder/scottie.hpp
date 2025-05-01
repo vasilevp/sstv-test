@@ -13,7 +13,7 @@ public:
 		DX = 76,
 	};
 
-	Scottie(const std::string &input, const Synthesizer &s, Mode mode, const std::string &greeting = "");
+	Scottie(const std::string &input, Synthesizer &&s, Mode mode, const std::string &greeting = "");
 
 	void Encode();
 

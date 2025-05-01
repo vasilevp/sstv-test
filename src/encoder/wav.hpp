@@ -1,6 +1,8 @@
 #pragma once
-#include <vector>
+#include <iostream>
+#include <stacktrace>
 #include <string>
+#include <vector>
 
 extern "C"
 {
@@ -9,7 +11,7 @@ extern "C"
 
 class WAVWriter
 {
-	const size_t sample_rate;
+	size_t sample_rate;
 
 	FILE *f = nullptr;
 
@@ -17,15 +19,38 @@ class WAVWriter
 	wav_sample_t sample = {1, 1, 1, nullptr};
 
 public:
+	// Avoid copying because we own *f
+	WAVWriter(const WAVWriter &) = delete;
+	WAVWriter &operator=(const WAVWriter &) = delete;
+
+	// Move constructor
+	WAVWriter(WAVWriter &&other) noexcept
+		: sample_rate(other.sample_rate), f(other.f), samples(std::move(other.samples)), sample(other.sample)
+	{
+		utils::Guard();
+		other.f = nullptr; // Transfer ownership
+	}
+
+	WAVWriter &operator=(WAVWriter &&other) = default;
+
 	WAVWriter(const std::string &name, const size_t sample_rate)
 		: sample_rate(sample_rate)
 	{
+		utils::Guard();
+
 		f = name != "-" ? fopen(name.c_str(), "wb") : stdout;
+		if (!f)
+			throw std::runtime_error("Failed to open file for writing");
 		samples.reserve(sample_rate);
 	}
 
 	~WAVWriter()
 	{
+		utils::Guard();
+
+		if (!f)
+			return;
+
 		write_wav_header(
 			f,
 			1,

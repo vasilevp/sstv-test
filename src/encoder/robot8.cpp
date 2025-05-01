@@ -8,6 +8,8 @@
 
 void Robot8::Encode()
 {
+	utils::Guard();
+
 	if ((height % 120) != 0)
 	{
 		throw std::runtime_error("Image height must be divisible by 120!");
@@ -39,6 +41,8 @@ void Robot8::Encode()
 
 void Robot8::writeGreeting()
 {
+	utils::Guard();
+
 	const float pixelTime = lineTime / float(width);
 
 	auto textLine = [&](auto i)

@@ -11,10 +11,13 @@ public:
 		// Input file name.
 		const std::string &input,
 		// Output file name.
-		const Synthesizer &output,
+		Synthesizer &&output,
 		// Greeting text.
 		const std::string &greeting = "")
-		: Robot(input, output, 8, lineTime, greeting, false) {};
+		: Robot(input, std::move(output), 8, lineTime, greeting, false)
+	{
+		utils::Guard();
+	};
 
 private:
 	static constexpr float lineTime = 88;

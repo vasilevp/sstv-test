@@ -22,12 +22,27 @@ enum Frequency : uint16_t
 class Synthesizer
 {
 public:
-	Synthesizer(const std::string &output, int sample_rate = 8000)
+	Synthesizer(const Synthesizer &) = delete;
+	Synthesizer &operator=(const Synthesizer &) = delete;
+
+	Synthesizer(Synthesizer &&) = default;
+	Synthesizer &operator=(Synthesizer &&) = default;
+
+	Synthesizer(const std::string &output, size_t sample_rate = 8000)
 		: sample_rate(sample_rate),
 		  freq_step(sample_rate / utils::lut.size()),
-		  w(output, sample_rate) {};
+		  w{output, sample_rate}
+	{
+		utils::Guard();
+	};
 
-	Synthesizer(const char output[], int sample_rate = 8000) : Synthesizer(std::string(output), sample_rate) {};
+	Synthesizer(const char output[], size_t sample_rate = 8000)
+		: sample_rate(sample_rate),
+		  freq_step(sample_rate / utils::lut.size()),
+		  w{output, sample_rate}
+	{
+		utils::Guard();
+	};
 
 	inline static constexpr Frequency Lerp(Frequency from, Frequency to, float f)
 	{
@@ -55,8 +70,8 @@ public:
 private:
 	WAVWriter w;
 	// MUST BE A MULTIPLE OF 2000
-	const size_t sample_rate;
-	const int freq_step;
+	size_t sample_rate;
+	int freq_step;
 
 	float frame = 0;
 	int idx = 0;

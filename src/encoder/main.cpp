@@ -12,6 +12,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+	utils::Guard();
+
 	if (argc != 2)
 	{
 		println("Usage: {} <input_bmp> - converts a BMP into ROBOT B/W 8 WAV SSTV format", argv[0]);

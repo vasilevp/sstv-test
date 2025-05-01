@@ -1,25 +1,35 @@
-bin_PROGRAMS = sstv
+# Enable C++23 and C23 standards
+AM_CXXFLAGS = --std=c++23 -flto
+AM_CFLAGS = --std=c23 -flto
+AM_LDFLAGS = -flto -lunwind -L/nix/store/lfz2hjp4zb4l4pbpcq7n7mnsalqd0ha1-libunwind-1.8.1/lib/
+CXXFLAGS = -g -O3 -fsanitize=address
+CFLAGS = -g -O3
+# Add include paths for libraries
+AM_CPPFLAGS = -O3 -I$(srcdir)/src -I$(builddir) -I$(srcdir)/modules
 
-sstv_SOURCES = src/encoder/main.cpp \
+# Libraries
+noinst_LIBRARIES = libs/libwav.a libs/libbmp.a
+libs_libwav_a_SOURCES = modules/C-Wav-Lib/endianness.c modules/C-Wav-Lib/wav.c
+libs_libbmp_a_SOURCES = src/bmp/loadbmp.cpp
+
+# Programs
+bin_PROGRAMS = encoder decoder
+
+# Encoder
+encoder_SOURCES = src/encoder/main.cpp \
 			   src/encoder/encoder.cpp \
-			   src/encoder/loadbmp.cpp \
 			   src/encoder/robot8.cpp \
 			   src/encoder/robot.cpp \
 			   src/encoder/martin.cpp \
-			   src/encoder/scottie.cpp
+			   src/encoder/scottie.cpp \
+			   src/encoder/utils.cpp
 
-# Enable C++23 and C23 standards
-AM_CXXFLAGS = --std=c++23
-AM_CFLAGS = --std=c23
-# Add include paths for libraries
-AM_CPPFLAGS = -O3 -flto -I$(srcdir)/src -I$(builddir) -I$(srcdir)/modules
+encoder_LDADD = libs/libwav.a libs/libbmp.a
 
-# Build a static library for modules/C-Wav-Lib
-noinst_LIBRARIES = libwav.a
-libwav_a_SOURCES = modules/C-Wav-Lib/endianness.c modules/C-Wav-Lib/wav.c
+# Decoder
+decoder_SOURCES = src/decoder/main.cpp \
+			   src/decoder/decoder.cpp
 
-# Link the static library with the sstv program
-sstv_LDADD = libwav.a
 
 # Specify the directory for object files
 DEPDIR = $(srcdir)/.deps
@@ -30,7 +40,7 @@ CLANG_TIDY_CHECKS = -checks=-*,modernize-*,performance-*,bugprone-*,clang-analyz
 
 # Define a rule for each source file
 .PHONY: tidy
-tidy: $(sstv_SOURCES:.cpp=.tidy)
+tidy: $(encoder_SOURCES:.cpp=.tidy)
 
 .PHONY: %.tidy
 %.tidy: %.cpp

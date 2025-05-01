@@ -13,12 +13,14 @@ Scottie::Scottie(
 	// Input file name.
 	const std::string &input,
 	// Output synthesizer.
-	const Synthesizer &s,
+	Synthesizer &&s,
 	// Mode.
 	Mode mode,
 	// Greeting text.
-	const std::string &greeting) : Encoder(input, s, mode), greeting(greeting)
+	const std::string &greeting) : Encoder(input, std::move(s), mode), greeting(greeting)
 {
+	utils::Guard();
+
 	switch (mode)
 	{
 	case S1:
@@ -37,6 +39,8 @@ Scottie::Scottie(
 
 void Scottie::Encode()
 {
+	utils::Guard();
+
 	if ((height % 120) != 0)
 	{
 		throw std::runtime_error("Image height must be divisible by 120!");
@@ -84,6 +88,8 @@ void Scottie::colorLine(uint32_t i, size_t color)
 
 void Scottie::writeGreeting()
 {
+	utils::Guard();
+
 	const float pixelTime = lineTime / float(width);
 
 	auto textLine = [&](auto i)

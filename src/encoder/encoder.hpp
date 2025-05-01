@@ -15,12 +15,12 @@ public:
 protected:
 	const uint8_t visCode;
 
-	uint8_t *pixels;
+	unsigned char *pixels = nullptr;
 	uint32_t width, height;
 	uint32_t targetHeight;
 	Synthesizer s;
 
-	Encoder(const std::string &input, const Synthesizer &s, uint8_t visCode);
+	Encoder(const std::string &input, Synthesizer &&s, uint8_t visCode);
 
 	void writeHeader();
 
