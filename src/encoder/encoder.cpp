@@ -12,7 +12,7 @@
 
 using namespace std;
 
-Encoder::Encoder(const string &input, Synthesizer &&s, uint8_t visCode) : visCode(visCode), s(std::move(s)), pixels(nullptr)
+Encoder::Encoder(const string &input, Synthesizer &&s, uint8_t visCode) : visCode(visCode), s(std::move(s))
 {
 	utils::Guard();
 

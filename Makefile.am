@@ -1,7 +1,7 @@
 # Enable C++23 and C23 standards
 AM_CXXFLAGS = --std=c++23 -flto
 AM_CFLAGS = --std=c23 -flto
-AM_LDFLAGS = -flto -lunwind -L/nix/store/lfz2hjp4zb4l4pbpcq7n7mnsalqd0ha1-libunwind-1.8.1/lib/
+AM_LDFLAGS = -flto
 CXXFLAGS = -g -O3 -fsanitize=address
 CFLAGS = -g -O3
 # Add include paths for libraries
@@ -22,7 +22,8 @@ encoder_SOURCES = src/encoder/main.cpp \
 			   src/encoder/robot.cpp \
 			   src/encoder/martin.cpp \
 			   src/encoder/scottie.cpp \
-			   src/encoder/utils.cpp
+			   src/encoder/utils.cpp \
+			   src/encoder/wav.cpp
 
 encoder_LDADD = libs/libwav.a libs/libbmp.a
 
