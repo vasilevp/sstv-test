@@ -1,4 +1,6 @@
 #include "utils.hpp"
+
+#include <atomic>
 #include <print>
 #include <string>
 

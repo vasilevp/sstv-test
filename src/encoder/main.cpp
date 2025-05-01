@@ -7,6 +7,7 @@
 #include "robot8.hpp"
 #include "scottie.hpp"
 #include "synthesizer.hpp"
+#include "utils.hpp"
 
 using namespace std;
 

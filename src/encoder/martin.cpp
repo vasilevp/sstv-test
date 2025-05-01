@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <print>
+#include <ostream>
 
 using namespace std;
 
@@ -15,7 +15,7 @@ void Martin::Encode()
 
 	if (height != 256)
 	{
-		print(cerr, "WARN: Image height must be 256 pixels! Provided height of {} may cause issues with the receiver.", height);
+		std::print(cerr, "WARN: Image height must be 256 pixels! Provided height of {} may cause issues with the receiver.", height);
 	}
 
 	writeHeader();

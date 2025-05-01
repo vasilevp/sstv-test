@@ -1,10 +1,12 @@
 #include "encoder.hpp"
 #include "synthesizer.hpp"
+#include "utils.hpp"
 
 #include <cstdint>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include <LoadBMP/loadbmp.h>
 
