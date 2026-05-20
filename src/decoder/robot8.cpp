@@ -16,12 +16,6 @@ namespace
 	// 10 ms calibration pulse and the 30 ms VIS pulses in the header.
 	constexpr float SyncMinMs = 2.0f;
 	constexpr float SyncMaxMs = 8.0f;
-
-	// One contiguous run of below-threshold (sync-tone) samples.
-	struct Run
-	{
-		size_t begin, end; // half-open [begin, end) sample range
-	};
 }
 
 void Robot8::Decode()
@@ -29,30 +23,25 @@ void Robot8::Decode()
 	if (demod.size() == 0)
 		throw std::runtime_error("Empty recording");
 
-	// 1. Find every run of samples whose frequency dips into the sync band.
-	//    Leading/trailing silence reads as 0 Hz and is skipped by the
-	//    `f > 0` test.
-	std::vector<Run> runs;
-	for (size_t i = 0; i < demod.size();)
+	// Identify the mode from the header VIS code. This build only decodes
+	// Robot 8 B/W, so the result is informational — a mismatch is reported
+	// but decoding still proceeds.
+	const VIS vis = detectVIS();
+	if (vis.found)
 	{
-		float f = demod.at(i);
-		if (f > 0.0f && f < sstv::SyncThreshold)
-		{
-			size_t begin = i;
-			while (i < demod.size())
-			{
-				float g = demod.at(i);
-				if (!(g > 0.0f && g < sstv::SyncThreshold))
-					break;
-				++i;
-			}
-			runs.push_back({begin, i});
-		}
-		else
-		{
-			++i;
-		}
+		std::println("VIS code: {} ({}){}", int(vis.code), sstv::visModeName(vis.code),
+		             vis.parityOK ? "" : "  [PARITY MISMATCH]");
+		if (!vis.parityOK)
+			std::println("  warning: VIS parity check failed; the recording may be corrupt");
 	}
+	else
+	{
+		std::println("VIS code: not found; assuming Robot 8 B/W");
+	}
+
+	// 1. Find every run of samples whose frequency dips into the sync band.
+	//    Leading/trailing silence reads as 0 Hz and is skipped by syncRuns().
+	const std::vector<Run> runs = syncRuns();
 
 	// 2. Classify the runs. Scanline syncs for lines 1..N-1 show up as short
 	//    runs. Line 0's sync is special: the encoder writes the 30 ms VIS
@@ -93,8 +82,8 @@ void Robot8::Decode()
 	{
 		size_t pixelBegin = syncs[line].end;
 		size_t pixelEnd = (line + 1 < height)
-							  ? syncs[line + 1].begin
-							  : pixelBegin + demod.ms2samp(lineTime);
+		                      ? syncs[line + 1].begin
+		                      : pixelBegin + demod.ms2samp(lineTime);
 		if (pixelEnd <= pixelBegin)
 			pixelEnd = pixelBegin + demod.ms2samp(lineTime);
 		const size_t span = pixelEnd - pixelBegin;
@@ -119,7 +108,7 @@ void Robot8::Decode()
 
 	// 4. Write the reconstructed image.
 	if (unsigned err = loadbmp_encode_file(
-			output.c_str(), image.data(), width, height, LOADBMP_RGB))
+	        output.c_str(), image.data(), width, height, LOADBMP_RGB))
 		throw std::runtime_error("Failed to write BMP (loadbmp error " + std::to_string(err) + ")");
 
 	std::println("Wrote {}", output);
