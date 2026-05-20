@@ -1,6 +1,9 @@
-# Enable C++23 and C23 standards
-AM_CXXFLAGS = --std=c++23 -flto
-AM_CFLAGS = --std=c23 -flto
+# Enable C++23 and C23 standards.
+# -ffat-lto-objects keeps a real symbol table in each .o alongside the LTO
+# IR, so plain ar/ranlib can index the static libraries (gcc-ar is not on
+# PATH here). Without it, slim LTO objects archive into an unusable .a.
+AM_CXXFLAGS = --std=c++23 -flto -ffat-lto-objects
+AM_CFLAGS = --std=c23 -flto -ffat-lto-objects
 AM_LDFLAGS = -flto
 CXXFLAGS = -g -O3 -fsanitize=address
 CFLAGS = -g -O3

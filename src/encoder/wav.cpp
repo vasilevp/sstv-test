@@ -39,8 +39,8 @@ WAVWriter::~WAVWriter()
 
 	// surround actual data with silence for easier playback
 	wav_sample_t sample{
-		.BytesPerSample = 1,
 		.Channels = 1,
+		.BytesPerSample = 1,
 	};
 
 	sample.DataSize = silence.size();
