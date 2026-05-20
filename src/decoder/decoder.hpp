@@ -45,6 +45,10 @@ public:
 		size_t headerEnd = 0;  // sample index just past the VIS stop marker
 	};
 
+	// Locate and decode the header VIS code. Static so callers can probe a
+	// recording's mode before committing to a concrete decoder.
+	static VIS detectVIS(const Demodulator &demod);
+
 protected:
 	Decoder(const std::string &input, const std::string &output)
 		: demod(input), output(output)
@@ -58,10 +62,7 @@ protected:
 	};
 
 	// Every sync-band run in the recording, in order of appearance.
-	std::vector<Run> syncRuns() const;
-
-	// Locate and decode the header VIS code. See VIS above.
-	VIS detectVIS() const;
+	static std::vector<Run> syncRuns(const Demodulator &demod);
 
 	Demodulator demod;
 	std::string output;

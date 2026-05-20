@@ -21,7 +21,7 @@ const char *sstv::visModeName(uint8_t code)
 	}
 }
 
-std::vector<Decoder::Run> Decoder::syncRuns() const
+std::vector<Decoder::Run> Decoder::syncRuns(const Demodulator &demod)
 {
 	std::vector<Run> runs;
 	for (size_t i = 0; i < demod.size();)
@@ -47,10 +47,10 @@ std::vector<Decoder::Run> Decoder::syncRuns() const
 	return runs;
 }
 
-Decoder::VIS Decoder::detectVIS() const
+Decoder::VIS Decoder::detectVIS(const Demodulator &demod)
 {
 	VIS vis;
-	const std::vector<Run> runs = syncRuns();
+	const std::vector<Run> runs = syncRuns(demod);
 
 	// The header opens with a calibration burst: a 1900 Hz tone, a 10 ms
 	// sync pulse, another 1900 Hz tone, then the VIS section. So the

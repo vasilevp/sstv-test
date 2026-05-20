@@ -64,7 +64,8 @@ add_executable(decoder
   src/decoder/main.cpp
   src/decoder/decoder.cpp
   src/decoder/demodulator.cpp
-  src/decoder/robot8.cpp)
+  src/decoder/robot8.cpp
+  src/decoder/robot.cpp)
 target_include_directories(decoder PRIVATE src modules)
 target_link_libraries(decoder PRIVATE wav bmp)
 

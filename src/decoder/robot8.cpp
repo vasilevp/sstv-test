@@ -26,7 +26,7 @@ void Robot8::Decode()
 	// Identify the mode from the header VIS code. This build only decodes
 	// Robot 8 B/W, so the result is informational — a mismatch is reported
 	// but decoding still proceeds.
-	const VIS vis = detectVIS();
+	const VIS vis = detectVIS(demod);
 	if (vis.found)
 	{
 		std::println("VIS code: {} ({}){}", int(vis.code), sstv::visModeName(vis.code),
@@ -41,7 +41,7 @@ void Robot8::Decode()
 
 	// 1. Find every run of samples whose frequency dips into the sync band.
 	//    Leading/trailing silence reads as 0 Hz and is skipped by syncRuns().
-	const std::vector<Run> runs = syncRuns();
+	const std::vector<Run> runs = syncRuns(demod);
 
 	// 2. Classify the runs. Scanline syncs for lines 1..N-1 show up as short
 	//    runs. Line 0's sync is special: the encoder writes the 30 ms VIS
