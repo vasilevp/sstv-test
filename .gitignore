@@ -7,20 +7,6 @@ a.out
 *.exe
 *.a
 
-# Automake generated files
-Makefile.in
-Makefile
-aclocal.m4
-autom4te.cache/
-configure
-config.log
-config.status
-depcomp
-install-sh
-missing
-compile
-.deps/
-Makefile
-config.cache
-.dirstamp
+# CMake build directory
+/build/
 *~
