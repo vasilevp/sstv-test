@@ -17,9 +17,9 @@ class Robot8 : public Decoder
 {
 public:
 	Robot8(const std::string &input,
-	       const std::string &output,
-	       uint32_t width = 320,
-	       float lineTime = 56.0f)
+		   const std::string &output,
+		   uint32_t width = 320,
+		   float lineTime = 56.0f)
 		: Decoder(input, output),
 		  width(width),
 		  lineTime(lineTime)

@@ -9,8 +9,8 @@
 // Synthesizer::Frequency enum.
 namespace sstv
 {
-	constexpr float Black = 1500.0f;     // pixel luma 0
-	constexpr float White = 2300.0f;     // pixel luma 255
+	constexpr float Black = 1500.0f;	 // pixel luma 0
+	constexpr float White = 2300.0f;	 // pixel luma 255
 	constexpr float SyncPulse = 1200.0f; // scanline / VIS sync tone
 
 	constexpr float VISOne = 1100.0f;  // a VIS data bit valued 1
@@ -39,8 +39,8 @@ public:
 	// encoder writes to identify the SSTV mode.
 	struct VIS
 	{
-		bool found = false;    // the header VIS section was located
-		uint8_t code = 0;      // 7-bit mode code
+		bool found = false;	   // the header VIS section was located
+		uint8_t code = 0;	   // 7-bit mode code
 		bool parityOK = false; // decoded parity bit matched the code
 		size_t headerEnd = 0;  // sample index just past the VIS stop marker
 	};

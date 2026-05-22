@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 			break;
 		default:
 			std::println("No decoder for VIS code {}; falling back to Robot 8 B/W",
-			             vis.found ? std::to_string(vis.code) : std::string("(absent)"));
+						 vis.found ? std::to_string(vis.code) : std::string("(absent)"));
 			decoder = std::make_unique<Robot8>(input, output, width);
 			break;
 		}

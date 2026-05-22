@@ -59,7 +59,7 @@ void Robot::Decode()
 				b = a + 1;
 			float f = demod.average(a, b);
 			row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
-			                    0.0f, 255.0f);
+								0.0f, 255.0f);
 		}
 	};
 
@@ -76,7 +76,7 @@ void Robot::Decode()
 		sampleRow(yStart, ySpan, line[L].Y);
 
 		size_t c1 = porchStart[L] +
-		            demod.ms2samp(syncPorch + lineTime + chromaSep + chromaPorch);
+					demod.ms2samp(syncPorch + lineTime + chromaSep + chromaPorch);
 		if (fullColor)
 		{
 			// Robot 72: the line carries R-Y then B-Y back to back.
@@ -118,7 +118,8 @@ void Robot::Decode()
 	// Convert YCbCr back to RGB. These are the BT.601 studio-swing inverse
 	// coefficients matching the encoder's getY / getChroma* matrix.
 	std::vector<uint8_t> image(size_t(width) * height * 3);
-	auto px = [](float v) { return uint8_t(std::clamp(v, 0.0f, 255.0f)); };
+	auto px = [](float v)
+	{ return uint8_t(std::clamp(v, 0.0f, 255.0f)); };
 
 	for (uint32_t L = 0; L < height; ++L)
 	{
@@ -137,7 +138,7 @@ void Robot::Decode()
 	}
 
 	if (unsigned err = loadbmp_encode_file(
-	        output.c_str(), image.data(), width, height, LOADBMP_RGB))
+			output.c_str(), image.data(), width, height, LOADBMP_RGB))
 		throw std::runtime_error("Failed to write BMP (loadbmp error " + std::to_string(err) + ")");
 
 	std::println("Wrote {}", output);

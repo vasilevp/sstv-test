@@ -30,7 +30,7 @@ void Robot8::Decode()
 	if (vis.found)
 	{
 		std::println("VIS code: {} ({}){}", int(vis.code), sstv::visModeName(vis.code),
-		             vis.parityOK ? "" : "  [PARITY MISMATCH]");
+					 vis.parityOK ? "" : "  [PARITY MISMATCH]");
 		if (!vis.parityOK)
 			std::println("  warning: VIS parity check failed; the recording may be corrupt");
 	}
@@ -82,8 +82,8 @@ void Robot8::Decode()
 	{
 		size_t pixelBegin = syncs[line].end;
 		size_t pixelEnd = (line + 1 < height)
-		                      ? syncs[line + 1].begin
-		                      : pixelBegin + demod.ms2samp(lineTime);
+							  ? syncs[line + 1].begin
+							  : pixelBegin + demod.ms2samp(lineTime);
 		if (pixelEnd <= pixelBegin)
 			pixelEnd = pixelBegin + demod.ms2samp(lineTime);
 		const size_t span = pixelEnd - pixelBegin;
@@ -108,7 +108,7 @@ void Robot8::Decode()
 
 	// 4. Write the reconstructed image.
 	if (unsigned err = loadbmp_encode_file(
-	        output.c_str(), image.data(), width, height, LOADBMP_RGB))
+			output.c_str(), image.data(), width, height, LOADBMP_RGB))
 		throw std::runtime_error("Failed to write BMP (loadbmp error " + std::to_string(err) + ")");
 
 	std::println("Wrote {}", output);

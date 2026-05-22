@@ -9,15 +9,24 @@ const char *sstv::visModeName(uint8_t code)
 {
 	switch (code)
 	{
-	case 1:  return "Robot 8 B/W";
-	case 8:  return "Robot 36";
-	case 12: return "Robot 72";
-	case 40: return "Martin 2";
-	case 44: return "Martin 1";
-	case 56: return "Scottie 2";
-	case 60: return "Scottie 1";
-	case 76: return "Scottie DX";
-	default: return "unknown";
+	case 1:
+		return "Robot 8 B/W";
+	case 8:
+		return "Robot 36";
+	case 12:
+		return "Robot 72";
+	case 40:
+		return "Martin 2";
+	case 44:
+		return "Martin 1";
+	case 56:
+		return "Scottie 2";
+	case 60:
+		return "Scottie 1";
+	case 76:
+		return "Scottie DX";
+	default:
+		return "unknown";
 	}
 }
 
