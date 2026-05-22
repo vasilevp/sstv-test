@@ -15,15 +15,24 @@ const char *sstv::visModeName(uint8_t code)
 {
 	switch (code)
 	{
-	case 1:  return "Robot 8 B/W";
-	case 8:  return "Robot 36";
-	case 12: return "Robot 72";
-	case 40: return "Martin 2";
-	case 44: return "Martin 1";
-	case 56: return "Scottie 2";
-	case 60: return "Scottie 1";
-	case 76: return "Scottie DX";
-	default: return "unknown";
+	case 1:
+		return "Robot 8 B/W";
+	case 8:
+		return "Robot 36";
+	case 12:
+		return "Robot 72";
+	case 40:
+		return "Martin 2";
+	case 44:
+		return "Martin 1";
+	case 56:
+		return "Scottie 2";
+	case 60:
+		return "Scottie 1";
+	case 76:
+		return "Scottie DX";
+	default:
+		return "unknown";
 	}
 }
 
@@ -61,7 +70,8 @@ namespace
 Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate)
 {
 	VIS vis;
-	auto samp = [&](float ms) { return size_t(sampleRate * ms / 1000.0f); };
+	auto samp = [&](float ms)
+	{ return size_t(sampleRate * ms / 1000.0f); };
 
 	const std::vector<Run> runs = syncRuns(freq);
 
@@ -96,11 +106,11 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 	{
 		size_t a = visStart + samp(slot * ElementMs + 10.0f);
 		size_t b = visStart + samp(slot * ElementMs + 20.0f);
-		double acc = 0.0;
+		float acc = 0.0f;
 		size_t n = 0;
 		for (size_t i = a; i < b && i < freq.size(); ++i, ++n)
 			acc += freq[i];
-		return n ? float(acc / double(n)) : 0.0f;
+		return n ? acc / float(n) : 0.0f;
 	};
 
 	// Data bits: 1100 Hz = 1, 1300 Hz = 0, split at SyncPulse (1200 Hz).
@@ -165,7 +175,7 @@ void Decoder::processHeader(size_t index, float freq)
 	// decoding, replaying the samples already received past the header.
 	vis = v;
 	std::println("VIS code: {} ({}){}", int(vis.code), sstv::visModeName(vis.code),
-	             vis.parityOK ? "" : "  [PARITY MISMATCH]");
+				 vis.parityOK ? "" : "  [PARITY MISMATCH]");
 	if (!vis.parityOK)
 		std::println("  warning: VIS parity check failed; the recording may be corrupt");
 	state = State::Image;
@@ -234,10 +244,10 @@ void Decoder::finish()
 		throw std::runtime_error("No scanlines decoded");
 
 	std::println("{}: {} scanlines x {} px",
-	             sstv::visModeName(vis.code), imageHeight, width);
+				 sstv::visModeName(vis.code), imageHeight, width);
 
 	if (unsigned err = loadbmp_encode_file(output.c_str(), image.data(),
-	                                       width, imageHeight, LOADBMP_RGB))
+										   width, imageHeight, LOADBMP_RGB))
 		throw std::runtime_error("Failed to write BMP (loadbmp error " + std::to_string(err) + ")");
 
 	std::println("Wrote {}", output);
@@ -250,7 +260,7 @@ void Decoder::emitRow(const std::vector<uint8_t> &rgb)
 }
 
 std::vector<float> Decoder::sampleChannel(std::span<const float> content,
-                                          size_t off, size_t span) const
+										  size_t off, size_t span) const
 {
 	std::vector<float> row(width);
 	for (uint32_t x = 0; x < width; ++x)
@@ -261,14 +271,14 @@ std::vector<float> Decoder::sampleChannel(std::span<const float> content,
 		if (b <= a)
 			b = a + 1;
 
-		double acc = 0.0;
+		float acc = 0.0f;
 		size_t n = 0;
 		for (size_t i = a; i < b && i < content.size(); ++i, ++n)
 			acc += content[i];
-		float f = n ? float(acc / double(n)) : 0.0f;
+		float f = n ? acc / float(n) : 0.0f;
 
 		row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
-		                    0.0f, 255.0f);
+							0.0f, 255.0f);
 	}
 	return row;
 }
