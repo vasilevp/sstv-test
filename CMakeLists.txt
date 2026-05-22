@@ -55,6 +55,7 @@ add_executable(encoder
   src/encoder/robot.cpp
   src/encoder/martin.cpp
   src/encoder/scottie.cpp
+  src/encoder/pd.cpp
   src/encoder/utils.cpp
   src/encoder/wav.cpp)
 target_include_directories(encoder PRIVATE src)
@@ -67,7 +68,8 @@ add_executable(decoder
   src/decoder/robot8.cpp
   src/decoder/robot.cpp
   src/decoder/martin.cpp
-  src/decoder/scottie.cpp)
+  src/decoder/scottie.cpp
+  src/decoder/pd.cpp)
 target_include_directories(decoder PRIVATE src modules)
 target_link_libraries(decoder PRIVATE wav bmp)
 

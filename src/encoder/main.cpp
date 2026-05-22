@@ -2,6 +2,7 @@
 #include <print>
 
 #include "martin.hpp"
+#include "pd.hpp"
 #include "robot36.hpp"
 #include "robot72.hpp"
 #include "robot8.hpp"
@@ -35,6 +36,8 @@ int main(int argc, char *argv[])
 
 		Martin(argv[1], "outputs/martin1.wav", 1, "Martin 1").Encode();
 		Martin(argv[1], "outputs/martin2.wav", 2, "Martin 2").Encode();
+
+		PD(argv[1], "outputs/pd120.wav", 121.6f, 95, "PD120").Encode();
 	}
 	catch (const std::exception &e)
 	{

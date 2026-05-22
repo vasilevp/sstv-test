@@ -31,6 +31,8 @@ const char *sstv::visModeName(uint8_t code)
 		return "Scottie 1";
 	case 76:
 		return "Scottie DX";
+	case 95:
+		return "PD120";
 	default:
 		return "unknown";
 	}

@@ -9,6 +9,7 @@
 
 #include "demodulator.hpp"
 #include "martin.hpp"
+#include "pd.hpp"
 #include "robot36.hpp"
 #include "robot72.hpp"
 #include "robot8.hpp"
@@ -72,6 +73,9 @@ int main(int argc, char *argv[])
 			break;
 		case 76:
 			decoder = std::make_unique<Scottie>(output, width, rate, 345.600f);
+			break;
+		case 95:
+			decoder = std::make_unique<PD>(output, width, rate, 121.6f);
 			break;
 		case 1:
 			decoder = std::make_unique<Robot8>(output, width, rate);
