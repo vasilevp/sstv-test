@@ -14,11 +14,12 @@
 class Demodulator
 {
 	uint32_t rate_;
-	float prev_ = 0.0f;          // previous input sample
-	size_t index_ = 0;           // running count of samples processed
-	double lastCrossing_ = 0.0;  // sample position of the last zero crossing
-	bool haveCrossing_ = false;  // a crossing has been seen
-	float freq_ = 0.0f;          // frequency of the most recent half-cycle
+	float prev_ = 0.0f;           // previous input sample
+	size_t index_ = 0;            // running count of samples processed
+	size_t lastCrossIndex_ = 0;   // integer sample index of the last crossing
+	float lastCrossFrac_ = 0.0f;  // sub-sample fraction [0,1] of the last crossing
+	bool haveCrossing_ = false;   // a crossing has been seen
+	float freq_ = 0.0f;           // frequency of the most recent half-cycle
 
 public:
 	explicit Demodulator(uint32_t sampleRate);
