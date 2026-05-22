@@ -18,10 +18,10 @@ class Robot : public Decoder
 protected:
 	Robot(const std::string &output,
 	      uint32_t width,
-	      uint32_t sampleRate,
+	      std::unique_ptr<Demodulator> demod,
 	      float lineTime,
 	      bool fullColor)
-		: Decoder(output, width, sampleRate),
+		: Decoder(output, width, std::move(demod)),
 		  lineTime(lineTime),
 		  fullColor(fullColor)
 	{

@@ -58,16 +58,15 @@ public:
 	// Signal end of stream: flush the final scanline and write the image.
 	void finish();
 
-	// Swap the demodulator algorithm. Only valid before any audio has been
-	// fed; throws otherwise (mid-stream state would be inconsistent).
-	void setDemodKind(DemodKind kind);
-
 	// Decode the VIS code from an already-demodulated frequency stream.
 	// Returns found == false if the buffer does not yet cover a full header.
 	static VIS detectVIS(const std::vector<float> &freq, uint32_t sampleRate);
 
 protected:
-	Decoder(const std::string &output, uint32_t width, uint32_t sampleRate);
+	// Constructor injection: the caller picks the demodulator and hands it
+	// in. The Decoder takes ownership and reads the sample rate from it.
+	Decoder(const std::string &output, uint32_t width,
+	        std::unique_ptr<Demodulator> demod);
 
 	// Decode one scanline's content — every frequency sample between the end
 	// of its sync pulse and the start of the next line's sync — into one or

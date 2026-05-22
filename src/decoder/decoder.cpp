@@ -146,20 +146,15 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 	return vis;
 }
 
-Decoder::Decoder(const std::string &output, uint32_t width, uint32_t sampleRate)
+Decoder::Decoder(const std::string &output, uint32_t width,
+                 std::unique_ptr<Demodulator> demod)
 	: width(width),
-	  sampleRate(sampleRate),
-	  demod(makeDemodulator(DemodKind::ZeroCrossing, sampleRate)),
+	  // Read the sample rate before moving demod (member init follows
+	  // declaration order, so sampleRate is initialised before demod).
+	  sampleRate(demod->sampleRate()),
+	  demod(std::move(demod)),
 	  output(output)
 {
-}
-
-void Decoder::setDemodKind(DemodKind kind)
-{
-	if (globalIndex > 0)
-		throw std::runtime_error(
-			"setDemodKind must be called before any audio is fed");
-	demod = makeDemodulator(kind, sampleRate);
 }
 
 void Decoder::feed(std::span<const float> audio)

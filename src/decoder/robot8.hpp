@@ -16,9 +16,9 @@ class Robot8 : public Decoder
 public:
 	Robot8(const std::string &output,
 	       uint32_t width,
-	       uint32_t sampleRate,
+	       std::unique_ptr<Demodulator> demod,
 	       float lineTime = 56.0f)
-		: Decoder(output, width, sampleRate),
+		: Decoder(output, width, std::move(demod)),
 		  lineTime(lineTime)
 	{
 	}

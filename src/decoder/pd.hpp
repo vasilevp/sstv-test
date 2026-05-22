@@ -18,9 +18,9 @@ class PD : public Decoder
 public:
 	PD(const std::string &output,
 	   uint32_t width,
-	   uint32_t sampleRate,
+	   std::unique_ptr<Demodulator> demod,
 	   float channelTime = 121.6f)
-		: Decoder(output, width, sampleRate),
+		: Decoder(output, width, std::move(demod)),
 		  channelTime(channelTime)
 	{
 	}

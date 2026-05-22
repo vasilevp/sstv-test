@@ -18,8 +18,9 @@
 class Scottie : public Decoder
 {
 public:
-	Scottie(const std::string &output, uint32_t width, uint32_t sampleRate, float lineTime)
-		: Decoder(output, width, sampleRate),
+	Scottie(const std::string &output, uint32_t width,
+	        std::unique_ptr<Demodulator> demod, float lineTime)
+		: Decoder(output, width, std::move(demod)),
 		  lineTime(lineTime)
 	{
 	}

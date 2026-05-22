@@ -10,8 +10,8 @@
 class Robot36 : public Robot
 {
 public:
-	Robot36(const std::string &output, uint32_t width, uint32_t sampleRate)
-		: Robot(output, width, sampleRate, /*lineTime=*/88.0f, /*fullColor=*/false)
+	Robot36(const std::string &output, uint32_t width, std::unique_ptr<Demodulator> demod)
+		: Robot(output, width, std::move(demod), /*lineTime=*/88.0f, /*fullColor=*/false)
 	{
 	}
 };
