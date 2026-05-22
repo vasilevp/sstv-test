@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -9,8 +10,8 @@
 // Synthesizer::Frequency enum.
 namespace sstv
 {
-	constexpr float Black = 1500.0f;	 // pixel luma 0
-	constexpr float White = 2300.0f;	 // pixel luma 255
+	constexpr float Black = 1500.0f;     // pixel luma 0
+	constexpr float White = 2300.0f;     // pixel luma 255
 	constexpr float SyncPulse = 1200.0f; // scanline / VIS sync tone
 
 	constexpr float VISOne = 1100.0f;  // a VIS data bit valued 1
@@ -25,45 +26,89 @@ namespace sstv
 	const char *visModeName(uint8_t code);
 }
 
-// Base class for SSTV mode decoders. Mirrors the encoder's Encoder: it owns
-// the signal source (a Demodulator instead of a Synthesizer) and leaves the
-// mode-specific scanline layout to Decode() in the derived class.
+// Streaming base class for SSTV mode decoders.
+//
+// Audio is pushed in with feed() and decoded incrementally — the decoder
+// never needs the whole signal in memory. Internally it runs a state machine:
+// it demodulates each sample, accumulates the header until the VIS code is
+// known, then tracks scanline sync pulses and hands each completed line's
+// frequency samples to the mode-specific decodeLine(). finish() flushes the
+// trailing line and writes the image, so a stream cut off mid-transmission
+// still yields a partial picture.
 class Decoder
 {
 public:
 	virtual ~Decoder() = default;
 
-	virtual void Decode() = 0;
-
 	// Decoded header VIS (Vertical Interval Signalling) code: the value the
 	// encoder writes to identify the SSTV mode.
 	struct VIS
 	{
-		bool found = false;	   // the header VIS section was located
-		uint8_t code = 0;	   // 7-bit mode code
+		bool found = false;    // the header VIS section was located
+		uint8_t code = 0;      // 7-bit mode code
 		bool parityOK = false; // decoded parity bit matched the code
 		size_t headerEnd = 0;  // sample index just past the VIS stop marker
 	};
 
-	// Locate and decode the header VIS code. Static so callers can probe a
-	// recording's mode before committing to a concrete decoder.
-	static VIS detectVIS(const Demodulator &demod);
+	// Push a block of normalised audio samples ([-1, 1)). May be called any
+	// number of times; decoding happens incrementally as data arrives.
+	void feed(std::span<const float> audio);
+
+	// Signal end of stream: flush the final scanline and write the image.
+	void finish();
+
+	// Decode the VIS code from an already-demodulated frequency stream.
+	// Returns found == false if the buffer does not yet cover a full header.
+	static VIS detectVIS(const std::vector<float> &freq, uint32_t sampleRate);
 
 protected:
-	Decoder(const std::string &input, const std::string &output)
-		: demod(input), output(output)
-	{
-	}
+	Decoder(const std::string &output, uint32_t width, uint32_t sampleRate);
 
-	// A contiguous run of samples carrying a sync-band tone (< SyncThreshold).
-	struct Run
-	{
-		size_t begin, end; // half-open sample range [begin, end)
-	};
+	// Decode one scanline's content — every frequency sample between the end
+	// of its sync pulse and the start of the next line's sync — into one or
+	// more pixel rows, each handed back through emitRow().
+	virtual void decodeLine(std::span<const float> content) = 0;
 
-	// Every sync-band run in the recording, in order of appearance.
-	static std::vector<Run> syncRuns(const Demodulator &demod);
+	// Nominal sample count of one line's content. Used only to bound the
+	// final line, which has no following sync pulse to delimit it.
+	virtual size_t nominalContentSamples() const = 0;
+
+	// Append one decoded pixel row (width * 3 bytes, RGB) to the image.
+	void emitRow(const std::vector<uint8_t> &rgb);
+
+	size_t ms2samp(float ms) const { return size_t(sampleRate * ms / 1000.0f); }
+
+	uint32_t width;
+	uint32_t sampleRate;
+	VIS vis;
+
+private:
+	void processFreq(size_t index, float freq);
+	void processHeader(size_t index, float freq);
+	void processImage(size_t index, float freq);
 
 	Demodulator demod;
 	std::string output;
+
+	enum class State
+	{
+		Header, // accumulating the calibration + VIS header
+		Image,  // tracking scanline syncs and decoding lines
+	} state = State::Header;
+
+	// Header state: frequency samples buffered until the VIS code is read.
+	std::vector<float> headerBuf;
+
+	// Image state: incremental sync-pulse tracking and line accumulation.
+	bool inRun = false;         // currently inside a sync-band run
+	size_t runBegin = 0;        // start index of the current run
+	bool haveLine = false;      // a scanline is being accumulated
+	size_t lineStart = 0;       // index where the current line's content starts
+	std::vector<float> lineBuf; // frequency samples of the current line
+
+	std::vector<uint8_t> image; // decoded RGB rows, row-major
+	uint32_t imageHeight = 0;
+
+	size_t globalIndex = 0; // running count of demodulated samples
+	bool finished = false;
 };

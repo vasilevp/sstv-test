@@ -1,13 +1,17 @@
+#include <algorithm>
 #include <cstdint>
 #include <exception>
 #include <memory>
 #include <print>
+#include <span>
 #include <string>
+#include <vector>
 
 #include "demodulator.hpp"
 #include "robot36.hpp"
 #include "robot72.hpp"
 #include "robot8.hpp"
+#include "wav.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -26,29 +30,51 @@ int main(int argc, char *argv[])
 		const std::string output = argv[2];
 		uint32_t width = argc == 4 ? uint32_t(std::stoul(argv[3])) : 320;
 
-		// Probe the header VIS code, then dispatch to the matching decoder.
-		Decoder::VIS vis = Decoder::detectVIS(Demodulator(input));
+		WAVReader wav(input);
+		const std::vector<float> &samples = wav.samples();
+		const uint32_t rate = wav.sampleRate();
+		if (samples.empty())
+			throw std::runtime_error("Empty recording");
+
+		// Probe the VIS code from the start of the stream to choose the
+		// matching decoder. A live receiver does the same: it listens until
+		// a header arrives, then commits to a mode.
+		Demodulator probe(rate);
+		std::vector<float> probeFreq;
+		size_t probeCount = std::min(samples.size(), size_t(rate) * 3);
+		probeFreq.reserve(probeCount);
+		for (size_t i = 0; i < probeCount; ++i)
+			probeFreq.push_back(probe.process(samples[i]));
+		Decoder::VIS vis = Decoder::detectVIS(probeFreq, rate);
 
 		std::unique_ptr<Decoder> decoder;
 		switch (vis.found ? vis.code : 0)
 		{
 		case 8:
-			decoder = std::make_unique<Robot36>(input, output, width);
+			decoder = std::make_unique<Robot36>(output, width, rate);
 			break;
 		case 12:
-			decoder = std::make_unique<Robot72>(input, output, width);
+			decoder = std::make_unique<Robot72>(output, width, rate);
 			break;
 		case 1:
-			decoder = std::make_unique<Robot8>(input, output, width);
+			decoder = std::make_unique<Robot8>(output, width, rate);
 			break;
 		default:
 			std::println("No decoder for VIS code {}; falling back to Robot 8 B/W",
-						 vis.found ? std::to_string(vis.code) : std::string("(absent)"));
-			decoder = std::make_unique<Robot8>(input, output, width);
+			             vis.found ? std::to_string(vis.code) : std::string("(absent)"));
+			decoder = std::make_unique<Robot8>(output, width, rate);
 			break;
 		}
 
-		decoder->Decode();
+		// Feed the recording to the decoder in fixed-size blocks, the way a
+		// live audio source would deliver it.
+		constexpr size_t Block = 4096;
+		for (size_t i = 0; i < samples.size(); i += Block)
+		{
+			size_t n = std::min(Block, samples.size() - i);
+			decoder->feed(std::span<const float>(samples.data() + i, n));
+		}
+		decoder->finish();
 	}
 	catch (const std::exception &e)
 	{
