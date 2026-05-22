@@ -65,6 +65,8 @@ add_executable(decoder
   src/decoder/main.cpp
   src/decoder/decoder.cpp
   src/decoder/demodulator.cpp
+  src/decoder/zero_crossing_demodulator.cpp
+  src/decoder/quadrature_demodulator.cpp
   src/decoder/robot8.cpp
   src/decoder/robot.cpp
   src/decoder/martin.cpp

@@ -5,6 +5,7 @@
 #include <print>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "demodulator.hpp"
@@ -16,22 +17,60 @@
 #include "scottie.hpp"
 #include "wav.hpp"
 
+namespace
+{
+	void printUsage(const char *argv0)
+	{
+		std::println("Usage: {} <input.wav> <output.bmp> [width] [--demod=zc|iq]", argv0);
+		std::println("  Decodes an SSTV recording into a BMP. The mode is selected");
+		std::println("  automatically from the header VIS code (Robot B&W 8, Robot");
+		std::println("  Color 36/72, Martin M1..M4, Scottie S1..S4/DX, PD 50..290).");
+		std::println("");
+		std::println("  --demod=zc  zero-crossing demodulator (default; fast, ideal");
+		std::println("              for clean synthetic recordings)");
+		std::println("  --demod=iq  quadrature FM discriminator (more robust to");
+		std::println("              noise; the design used by real SSTV decoders)");
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	if (argc < 3 || argc > 4)
+	// Extract --demod= from anywhere in argv; collect positional arguments.
+	DemodKind demodKind = DemodKind::ZeroCrossing;
+	std::vector<std::string> positional;
+	for (int i = 1; i < argc; ++i)
 	{
-		std::println("Usage: {} <input.wav> <output.bmp> [width]", argv[0]);
-		std::println("  Decodes an SSTV recording into a BMP. The mode is selected");
-		std::println("  automatically from the header VIS code (Robot 8 B/W,");
-		std::println("  Robot 36, Robot 72).");
+		std::string_view arg(argv[i]);
+		if (arg.starts_with("--demod="))
+		{
+			std::string_view v = arg.substr(8);
+			if (v == "zc" || v == "zero-crossing")
+				demodKind = DemodKind::ZeroCrossing;
+			else if (v == "iq" || v == "quadrature")
+				demodKind = DemodKind::Quadrature;
+			else
+			{
+				std::println("Error: --demod must be 'zc' or 'iq', got '{}'", v);
+				return 1;
+			}
+		}
+		else
+		{
+			positional.emplace_back(arg);
+		}
+	}
+
+	if (positional.size() < 2 || positional.size() > 3)
+	{
+		printUsage(argv[0]);
 		return 1;
 	}
 
 	try
 	{
-		const std::string input = argv[1];
-		const std::string output = argv[2];
-		uint32_t width = argc == 4 ? uint32_t(std::stoul(argv[3])) : 320;
+		const std::string input = positional[0];
+		const std::string output = positional[1];
+		uint32_t width = positional.size() == 3 ? uint32_t(std::stoul(positional[2])) : 320;
 
 		WAVReader wav(input);
 		const std::vector<float> &samples = wav.samples();
@@ -39,15 +78,17 @@ int main(int argc, char *argv[])
 		if (samples.empty())
 			throw std::runtime_error("Empty recording");
 
+		std::println("Demodulator: {}", demodKindName(demodKind));
+
 		// Probe the VIS code from the start of the stream to choose the
 		// matching decoder. A live receiver does the same: it listens until
 		// a header arrives, then commits to a mode.
-		Demodulator probe(rate);
+		auto probe = makeDemodulator(demodKind, rate);
 		std::vector<float> probeFreq;
 		size_t probeCount = std::min(samples.size(), size_t(rate) * 3);
 		probeFreq.reserve(probeCount);
 		for (size_t i = 0; i < probeCount; ++i)
-			probeFreq.push_back(probe.process(samples[i]));
+			probeFreq.push_back(probe->process(samples[i]));
 		Decoder::VIS vis = Decoder::detectVIS(probeFreq, rate);
 
 		std::unique_ptr<Decoder> decoder;
@@ -64,28 +105,20 @@ int main(int argc, char *argv[])
 		// Martin: M3/M4 share per-line timing with M1/M2; they just send
 		// fewer scanlines, which the streaming decoder counts dynamically.
 		case 44:
-			decoder = std::make_unique<Martin>(output, width, rate, 1);
-			break;
 		case 36:
 			decoder = std::make_unique<Martin>(output, width, rate, 1);
 			break;
 		case 40:
-			decoder = std::make_unique<Martin>(output, width, rate, 2);
-			break;
 		case 32:
 			decoder = std::make_unique<Martin>(output, width, rate, 2);
 			break;
 
 		// Scottie: S3/S4 likewise share per-line timing with S1/S2.
 		case 60:
-			decoder = std::make_unique<Scottie>(output, width, rate, 138.240f);
-			break;
 		case 52:
 			decoder = std::make_unique<Scottie>(output, width, rate, 138.240f);
 			break;
 		case 56:
-			decoder = std::make_unique<Scottie>(output, width, rate, 88.064f);
-			break;
 		case 48:
 			decoder = std::make_unique<Scottie>(output, width, rate, 88.064f);
 			break;
@@ -130,6 +163,8 @@ int main(int argc, char *argv[])
 			decoder = std::make_unique<Robot8>(output, width, rate);
 			break;
 		}
+
+		decoder->setDemodKind(demodKind);
 
 		// Feed the recording to the decoder in fixed-size blocks, the way a
 		// live audio source would deliver it.

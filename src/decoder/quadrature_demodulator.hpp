@@ -1,0 +1,67 @@
+#pragma once
+#include <cstddef>
+#include <cstdint>
+
+#include "demodulator.hpp"
+
+// Streaming complex-baseband FM discriminator — the "real" SSTV demodulator
+// design, as used by QSSTV/MMSSTV and standard FM-demod literature.
+//
+// Each audio sample is multiplied by a numerically-controlled oscillator
+// running at a fixed centre frequency to produce a complex baseband signal
+// (I, Q). A pair of two-pole IIR low-pass filters strips the sum-frequency
+// component, leaving the analytic signal around DC. The instantaneous
+// frequency is then the time derivative of the unwrapped phase, computed
+// cheaply as arg(z[n] * conj(z[n-1])).
+//
+// Compared to zero-crossing demodulation: noise is integrated over the LPF's
+// narrow bandwidth (so off-air recordings with poor SNR demodulate gracefully
+// instead of catastrophically), and the frequency estimate updates every
+// sample rather than only at zero crossings.
+class QuadratureDemodulator : public Demodulator
+{
+public:
+	explicit QuadratureDemodulator(uint32_t sampleRate);
+
+	float process(float sample) override;
+	uint32_t sampleRate() const override { return rate_; }
+
+private:
+	// Mid-band of the SSTV signal (mid-point of 1100..2300 Hz). Choosing
+	// this centre keeps the baseband signal symmetric around DC and lets a
+	// narrow LPF cover the whole tone range.
+	static constexpr float CenterHz = 1700.0f;
+
+	// LPF cutoff: comfortably above the ±600 Hz baseband swing and far
+	// below the sum-frequency component at 2 * CenterHz = 3400 Hz.
+	static constexpr float LpfCutoffHz = 800.0f;
+
+	// One section of a Butterworth low-pass biquad in transposed direct
+	// form II — cheap, branch-free, two multiplies and two stages of state.
+	struct Biquad
+	{
+		float b0 = 0.0f, b1 = 0.0f, b2 = 0.0f;
+		float a1 = 0.0f, a2 = 0.0f;
+		float z1 = 0.0f, z2 = 0.0f;
+
+		void setLowpass(float cutoffHz, float sampleRate);
+		float process(float x);
+	};
+
+	uint32_t rate_;
+
+	// NCO state: phase wraps in [0, 2π); incremented by phaseInc_ per sample.
+	float phase_ = 0.0f;
+	float phaseInc_;
+
+	// Baseband filters for the in-phase and quadrature branches.
+	Biquad lpfI_;
+	Biquad lpfQ_;
+
+	// Previous baseband I/Q, for the phase-derivative computation.
+	float prevI_ = 0.0f;
+	float prevQ_ = 0.0f;
+	bool havePrev_ = false;
+
+	float freq_ = 0.0f;
+};

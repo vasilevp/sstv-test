@@ -147,8 +147,19 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 }
 
 Decoder::Decoder(const std::string &output, uint32_t width, uint32_t sampleRate)
-	: width(width), sampleRate(sampleRate), demod(sampleRate), output(output)
+	: width(width),
+	  sampleRate(sampleRate),
+	  demod(makeDemodulator(DemodKind::ZeroCrossing, sampleRate)),
+	  output(output)
 {
+}
+
+void Decoder::setDemodKind(DemodKind kind)
+{
+	if (globalIndex > 0)
+		throw std::runtime_error(
+			"setDemodKind must be called before any audio is fed");
+	demod = makeDemodulator(kind, sampleRate);
 }
 
 void Decoder::feed(std::span<const float> audio)
@@ -157,7 +168,7 @@ void Decoder::feed(std::span<const float> audio)
 		return;
 	for (float sample : audio)
 	{
-		processFreq(globalIndex, demod.process(sample));
+		processFreq(globalIndex, demod->process(sample));
 		++globalIndex;
 	}
 }

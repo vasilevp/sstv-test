@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <string>
 #include <vector>
@@ -57,6 +58,10 @@ public:
 	// Signal end of stream: flush the final scanline and write the image.
 	void finish();
 
+	// Swap the demodulator algorithm. Only valid before any audio has been
+	// fed; throws otherwise (mid-stream state would be inconsistent).
+	void setDemodKind(DemodKind kind);
+
 	// Decode the VIS code from an already-demodulated frequency stream.
 	// Returns found == false if the buffer does not yet cover a full header.
 	static VIS detectVIS(const std::vector<float> &freq, uint32_t sampleRate);
@@ -93,7 +98,7 @@ private:
 	void processHeader(size_t index, float freq);
 	void processImage(size_t index, float freq);
 
-	Demodulator demod;
+	std::unique_ptr<Demodulator> demod;
 	std::string output;
 
 	enum class State
