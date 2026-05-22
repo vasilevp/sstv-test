@@ -8,33 +8,47 @@
 
 #include <LoadBMP/loadbmp.h>
 
-// Maps the VIS codes this project's encoder emits to mode names. Codes
-// 8/12/40/44/56/60/76 are the standard SSTV assignments; code 1 is the
-// non-standard value the encoder uses for its Robot 8 B/W mode.
+// SSTV mode names by VIS code, per Bruchanov, "Image Communication on Short
+// Waves" (sstv-handbook.com), chapter 5. The Robot B&W and Robot Color VIS
+// codes come in triplets/groups for separate R/G/B filter components — they
+// all denote the same mode, just a different colour channel selection.
 const char *sstv::visModeName(uint8_t code)
 {
 	switch (code)
 	{
+	case 0:  return "Robot Color 12";
 	case 1:
-		return "Robot 8 B/W";
-	case 8:
-		return "Robot 36";
-	case 12:
-		return "Robot 72";
-	case 40:
-		return "Martin 2";
-	case 44:
-		return "Martin 1";
-	case 56:
-		return "Scottie 2";
-	case 60:
-		return "Scottie 1";
-	case 76:
-		return "Scottie DX";
-	case 95:
-		return "PD120";
-	default:
-		return "unknown";
+	case 2:
+	case 3:  return "Robot B&W 8";
+	case 4:  return "Robot Color 24";
+	case 5:
+	case 6:
+	case 7:  return "Robot B&W 12";
+	case 8:  return "Robot Color 36";
+	case 9:
+	case 10:
+	case 11: return "Robot B&W 24";
+	case 12: return "Robot Color 72";
+	case 13:
+	case 14:
+	case 15: return "Robot B&W 36";
+	case 32: return "Martin M4";
+	case 36: return "Martin M3";
+	case 40: return "Martin M2";
+	case 44: return "Martin M1";
+	case 48: return "Scottie S4";
+	case 52: return "Scottie S3";
+	case 56: return "Scottie S2";
+	case 60: return "Scottie S1";
+	case 76: return "Scottie DX";
+	case 93: return "PD 50";
+	case 94: return "PD 290";
+	case 95: return "PD 120";
+	case 96: return "PD 180";
+	case 97: return "PD 240";
+	case 98: return "PD 160";
+	case 99: return "PD 90";
+	default: return "unknown";
 	}
 }
 

@@ -1,5 +1,6 @@
 #include "scottie.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <stdexcept>
@@ -26,12 +27,25 @@ Scottie::Scottie(
 	{
 	case S1:
 		lineTime = 138.240;
+		standardLines = 256;
 		break;
 	case S2:
 		lineTime = 88.064;
+		standardLines = 256;
+		break;
+	case S3:
+		// S3 has the same per-line timing as S1, but only 128 image lines.
+		lineTime = 138.240;
+		standardLines = 128;
+		break;
+	case S4:
+		// S4 has the same per-line timing as S2, but only 128 image lines.
+		lineTime = 88.064;
+		standardLines = 128;
 		break;
 	case DX:
 		lineTime = 345.600;
+		standardLines = 256;
 		break;
 	default:
 		throw std::invalid_argument("unknown mode");
@@ -42,22 +56,18 @@ void Scottie::Encode()
 {
 	utils::Guard();
 
-	if ((height % 120) != 0)
-	{
-		throw std::runtime_error("Image height must be divisible by 120!");
-	}
-
 	writeHeader();
 
 	// sync pulse
 	s.Synth(syncTime, SyncPulse);
 
-	if (height < 256 || !greeting.empty())
+	if (height < standardLines || !greeting.empty())
 	{
 		writeGreeting();
 	}
 
-	for (uint32_t i = 0; i < height; i++)
+	const uint32_t lines = std::min(height, standardLines);
+	for (uint32_t i = 0; i < lines; i++)
 	{
 		colorLine(i, 1);
 		colorLine(i, 2);

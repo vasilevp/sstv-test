@@ -2,6 +2,7 @@
 #include "synthesizer.hpp"
 #include "utils.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -13,16 +14,21 @@ void Martin::Encode()
 {
 	utils::Guard();
 
-	if (height != 256)
+	const uint32_t expected = standardLines(mode);
+	if (height < expected)
 	{
-		std::print(cerr, "WARN: Image height must be 256 pixels! Provided height of {} may cause issues with the receiver.", height);
+		std::print(cerr,
+				   "WARN: Image height is {} px but Martin M{} expects {}; "
+				   "the transmission will be a non-standard short variant.\n",
+				   height, mode, expected);
 	}
 
 	writeHeader();
 	if (!greeting.empty())
 		writeGreeting();
 
-	for (uint32_t i = 0; i < height; ++i)
+	const uint32_t lines = std::min(height, expected);
+	for (uint32_t i = 0; i < lines; ++i)
 	{
 		// sync pulse
 		s.Synth(syncPulse, SyncPulse);
@@ -38,7 +44,7 @@ void Martin::Encode()
 
 void Martin::colorLine(uint32_t i, size_t color)
 {
-	const float pixelTime = lineTime * float(3 - mode) / float(width);
+	const float pixelTime = lineTime * float(channelMultiplier(mode)) / float(width);
 
 	// sync porch
 	s.Synth(syncPorch, Frequency::SyncPorch);
@@ -58,7 +64,7 @@ void Martin::writeGreeting()
 {
 	utils::Guard();
 
-	const float pixelTime = lineTime * float(3 - mode) / float(width);
+	const float pixelTime = lineTime * float(channelMultiplier(mode)) / float(width);
 
 	auto textline = [&](int i)
 	{
