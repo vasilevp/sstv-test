@@ -11,40 +11,18 @@ void Robot::decodeLine(std::span<const float> content)
 	constexpr float chromaSep = syncPulse / 2;
 	constexpr float chromaPorch = syncPorch / 2;
 
-	// Reads `width` values from a channel at sample offset `off` spanning
-	// `span` samples, inverting the encoder's value -> frequency mapping.
-	auto sampleRow = [&](size_t off, size_t span, std::vector<float> &row)
-	{
-		row.resize(width);
-		for (uint32_t x = 0; x < width; ++x)
-		{
-			size_t a = off + span * x / width;
-			size_t b = off + span * (x + 1) / width;
-			if (b <= a)
-				b = a + 1;
-
-			double acc = 0.0;
-			size_t n = 0;
-			for (size_t i = a; i < b && i < content.size(); ++i, ++n)
-				acc += content[i];
-			float f = n ? float(acc / double(n)) : 0.0f;
-			row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
-			                    0.0f, 255.0f);
-		}
-	};
-
-	std::vector<float> Y, Cr, Cb;
-	sampleRow(ms2samp(syncPorch), ms2samp(lineTime), Y);
+	std::vector<float> Y = sampleChannel(content, ms2samp(syncPorch), ms2samp(lineTime));
 
 	const size_t cSpan = ms2samp(lineTime / 2);
 	const size_t c1 = ms2samp(syncPorch + lineTime + chromaSep + chromaPorch);
 
+	std::vector<float> Cr, Cb;
 	if (fullColor)
 	{
 		// Robot 72: the line carries R-Y then B-Y back to back.
 		const size_t c2 = c1 + cSpan + ms2samp(chromaSep + chromaPorch);
-		sampleRow(c1, cSpan, Cr);
-		sampleRow(c2, cSpan, Cb);
+		Cr = sampleChannel(content, c1, cSpan);
+		Cb = sampleChannel(content, c2, cSpan);
 	}
 	else
 	{
@@ -52,13 +30,13 @@ void Robot::decodeLine(std::span<const float> content)
 		// channel is borrowed from the previous line of opposite parity.
 		if (lineIndex % 2 == 0)
 		{
-			sampleRow(c1, cSpan, Cr);
+			Cr = sampleChannel(content, c1, cSpan);
 			Cb = lastCb;
 			lastCr = Cr;
 		}
 		else
 		{
-			sampleRow(c1, cSpan, Cb);
+			Cb = sampleChannel(content, c1, cSpan);
 			Cr = lastCr;
 			lastCb = Cb;
 		}

@@ -8,9 +8,11 @@
 #include <vector>
 
 #include "demodulator.hpp"
+#include "martin.hpp"
 #include "robot36.hpp"
 #include "robot72.hpp"
 #include "robot8.hpp"
+#include "scottie.hpp"
 #include "wav.hpp"
 
 int main(int argc, char *argv[])
@@ -55,6 +57,21 @@ int main(int argc, char *argv[])
 			break;
 		case 12:
 			decoder = std::make_unique<Robot72>(output, width, rate);
+			break;
+		case 44:
+			decoder = std::make_unique<Martin>(output, width, rate, 1);
+			break;
+		case 40:
+			decoder = std::make_unique<Martin>(output, width, rate, 2);
+			break;
+		case 60:
+			decoder = std::make_unique<Scottie>(output, width, rate, 138.240f);
+			break;
+		case 56:
+			decoder = std::make_unique<Scottie>(output, width, rate, 88.064f);
+			break;
+		case 76:
+			decoder = std::make_unique<Scottie>(output, width, rate, 345.600f);
 			break;
 		case 1:
 			decoder = std::make_unique<Robot8>(output, width, rate);

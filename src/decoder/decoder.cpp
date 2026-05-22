@@ -248,3 +248,27 @@ void Decoder::emitRow(const std::vector<uint8_t> &rgb)
 	image.insert(image.end(), rgb.begin(), rgb.end());
 	++imageHeight;
 }
+
+std::vector<float> Decoder::sampleChannel(std::span<const float> content,
+                                          size_t off, size_t span) const
+{
+	std::vector<float> row(width);
+	for (uint32_t x = 0; x < width; ++x)
+	{
+		// Pixel x occupies an even slice of the channel's sample span.
+		size_t a = off + span * x / width;
+		size_t b = off + span * (x + 1) / width;
+		if (b <= a)
+			b = a + 1;
+
+		double acc = 0.0;
+		size_t n = 0;
+		for (size_t i = a; i < b && i < content.size(); ++i, ++n)
+			acc += content[i];
+		float f = n ? float(acc / double(n)) : 0.0f;
+
+		row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
+		                    0.0f, 255.0f);
+	}
+	return row;
+}

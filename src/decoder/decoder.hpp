@@ -76,6 +76,12 @@ protected:
 	// Append one decoded pixel row (width * 3 bytes, RGB) to the image.
 	void emitRow(const std::vector<uint8_t> &rgb);
 
+	// Sample `width` channel values (0..255) from the frequency span
+	// content[off, off + span), inverting the encoder's value -> frequency
+	// mapping. The shared per-pixel sampler for every mode's decodeLine().
+	std::vector<float> sampleChannel(std::span<const float> content,
+	                                 size_t off, size_t span) const;
+
 	size_t ms2samp(float ms) const { return size_t(sampleRate * ms / 1000.0f); }
 
 	uint32_t width;
