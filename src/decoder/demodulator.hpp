@@ -21,30 +21,11 @@ class Demodulator
 	float freq_ = 0.0f;          // frequency of the most recent half-cycle
 
 public:
-	explicit Demodulator(uint32_t sampleRate) : rate_(sampleRate) {}
+	explicit Demodulator(uint32_t sampleRate);
 
 	uint32_t sampleRate() const { return rate_; }
 
 	// Process one normalised audio sample; returns its instantaneous
 	// frequency in Hz (0 until the first half-cycle completes).
-	float process(float sample)
-	{
-		if ((prev_ < 0.0f && sample >= 0.0f) || (prev_ > 0.0f && sample <= 0.0f))
-		{
-			// Linearly interpolate the sub-sample crossing position.
-			double frac = double(prev_) / (double(prev_) - double(sample));
-			double crossing = double(index_) - 1.0 + frac;
-			if (haveCrossing_)
-			{
-				double half = crossing - lastCrossing_;
-				if (half > 0.0)
-					freq_ = float(0.5 * double(rate_) / half);
-			}
-			lastCrossing_ = crossing;
-			haveCrossing_ = true;
-		}
-		prev_ = sample;
-		++index_;
-		return freq_;
-	}
+	float process(float sample);
 };
