@@ -76,3 +76,13 @@ target_include_directories(decoder PRIVATE src modules)
 target_link_libraries(decoder PRIVATE wav bmp)
 
 install(TARGETS encoder decoder RUNTIME DESTINATION bin)
+
+# Correctness test for the demodulators. Stand-alone executable that feeds
+# pure sines at known frequencies through both demodulators and prints
+# accuracy statistics. Not registered with CTest; run by hand.
+add_executable(demodulator_correctness
+  tests/demodulator_correctness.cpp
+  src/decoder/demodulator.cpp
+  src/decoder/zero_crossing_demodulator.cpp
+  src/decoder/quadrature_demodulator.cpp)
+target_include_directories(demodulator_correctness PRIVATE src/decoder)
