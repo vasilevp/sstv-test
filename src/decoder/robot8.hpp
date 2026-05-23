@@ -17,7 +17,7 @@ public:
 	Robot8(const std::string &output,
 	       uint32_t width,
 	       std::unique_ptr<Demodulator> demod,
-	       float lineTime = 56.0f)
+	       float lineTime = 56.667f)
 		: Decoder(output, width, std::move(demod)),
 		  lineTime(lineTime)
 	{

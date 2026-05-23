@@ -14,10 +14,13 @@ public:
 		Synthesizer &&output,
 		// Whether to send an 8-line calibration gradient at the start.
 		const std::string &greeting = "",
-		// Sync pulse time.
-		float syncTime = 5,
-		// Scanline time.
-		float lineTime = 56,
+		// Sync pulse duration in ms. The handbook (Bruchanov ch. 5) gives
+		// only the total line time (60/lpm); the 10 ms default matches the
+		// calibration pulse and the Robot colour modes' sync convention.
+		float syncTime = 10,
+		// Pixel-region duration in ms. 10 + 56.667 = 66.667 ms total,
+		// matching the handbook's lpm = 900 for Robot B&W 8.
+		float lineTime = 56.667f,
 		uint8_t visCode = 1)
 		: Encoder(input, std::move(output), visCode),
 		  syncTime(syncTime),
