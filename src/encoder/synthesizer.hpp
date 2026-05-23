@@ -36,7 +36,7 @@ public:
 		utils::Guard();
 	};
 
-	Synthesizer(const char output[], size_t sample_rate = 8000)
+	Synthesizer(const char output[], uint32_t sample_rate = 8000)
 		: sample_rate(sample_rate),
 		  freq_step(sample_rate / utils::lut.size()),
 		  w{output, sample_rate}
@@ -70,11 +70,11 @@ public:
 private:
 	WAVWriter w;
 	// MUST BE A MULTIPLE OF 2000
-	size_t sample_rate;
-	int freq_step;
+	uint32_t sample_rate;
+	uint32_t freq_step;
 
 	float frame = 0;
-	int idx = 0;
+	uint32_t idx = 0;
 	inline constexpr float ms2samp(float ms)
 	{
 		return sample_rate * ms / 1000;
