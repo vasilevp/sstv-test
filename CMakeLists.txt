@@ -86,3 +86,16 @@ add_executable(demodulator_correctness
   src/decoder/zero_crossing_demodulator.cpp
   src/decoder/quadrature_demodulator.cpp)
 target_include_directories(demodulator_correctness PRIVATE src/decoder)
+
+# Correctness test for the encoder (the modulator). Reads each WAV in
+# outputs/ and checks its scanline cadence and the 1900 Hz calibration
+# Grey tone against the SSTV Handbook (Bruchanov ch. 5, sstv-handbook.com).
+# Run after the encoder has been run on colortest.bmp.
+add_executable(modulator_correctness
+  tests/modulator_correctness.cpp
+  src/decoder/decoder.cpp
+  src/decoder/demodulator.cpp
+  src/decoder/zero_crossing_demodulator.cpp
+  src/decoder/quadrature_demodulator.cpp)
+target_include_directories(modulator_correctness PRIVATE src/decoder modules)
+target_link_libraries(modulator_correctness PRIVATE wav bmp)
