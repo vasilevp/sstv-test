@@ -10,8 +10,11 @@
 class Robot36 : public Robot
 {
 public:
-	Robot36(const std::string &output, uint32_t width, std::unique_ptr<Demodulator> demod)
-		: Robot(output, width, std::move(demod), /*lineTime=*/88.0f, /*fullColor=*/false)
+	Robot36(const std::string &output, uint32_t width,
+	        std::unique_ptr<Demodulator> demod,
+	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1))
+		: Robot(output, width, std::move(demod), std::move(syncFilter),
+		        /*lineTime=*/88.0f, /*fullColor=*/false)
 	{
 	}
 };

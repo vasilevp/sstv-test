@@ -15,8 +15,9 @@ class Martin : public Decoder
 {
 public:
 	Martin(const std::string &output, uint32_t width,
-	       std::unique_ptr<Demodulator> demod, uint8_t mode)
-		: Decoder(output, width, std::move(demod)),
+	       std::unique_ptr<Demodulator> demod, uint8_t mode,
+	       SimpleMovingAverage syncFilter = SimpleMovingAverage(1))
+		: Decoder(output, width, std::move(demod), std::move(syncFilter)),
 		  mode(mode)
 	{
 	}

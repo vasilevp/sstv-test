@@ -2,9 +2,12 @@
 
 #include <algorithm>
 #include <bit>
+#include <cstddef>
 #include <print>
 #include <stdexcept>
 #include <string>
+
+#include "simple_moving_average.hpp"
 
 #include <LoadBMP/loadbmp.h>
 
@@ -16,39 +19,64 @@ const char *sstv::visModeName(uint8_t code)
 {
 	switch (code)
 	{
-	case 0:  return "Robot Color 12";
+	case 0:
+		return "Robot Color 12";
 	case 1:
 	case 2:
-	case 3:  return "Robot B&W 8";
-	case 4:  return "Robot Color 24";
+	case 3:
+		return "Robot B&W 8";
+	case 4:
+		return "Robot Color 24";
 	case 5:
 	case 6:
-	case 7:  return "Robot B&W 12";
-	case 8:  return "Robot Color 36";
+	case 7:
+		return "Robot B&W 12";
+	case 8:
+		return "Robot Color 36";
 	case 9:
 	case 10:
-	case 11: return "Robot B&W 24";
-	case 12: return "Robot Color 72";
+	case 11:
+		return "Robot B&W 24";
+	case 12:
+		return "Robot Color 72";
 	case 13:
 	case 14:
-	case 15: return "Robot B&W 36";
-	case 32: return "Martin M4";
-	case 36: return "Martin M3";
-	case 40: return "Martin M2";
-	case 44: return "Martin M1";
-	case 48: return "Scottie S4";
-	case 52: return "Scottie S3";
-	case 56: return "Scottie S2";
-	case 60: return "Scottie S1";
-	case 76: return "Scottie DX";
-	case 93: return "PD 50";
-	case 94: return "PD 290";
-	case 95: return "PD 120";
-	case 96: return "PD 180";
-	case 97: return "PD 240";
-	case 98: return "PD 160";
-	case 99: return "PD 90";
-	default: return "unknown";
+	case 15:
+		return "Robot B&W 36";
+	case 32:
+		return "Martin M4";
+	case 36:
+		return "Martin M3";
+	case 40:
+		return "Martin M2";
+	case 44:
+		return "Martin M1";
+	case 48:
+		return "Scottie S4";
+	case 52:
+		return "Scottie S3";
+	case 56:
+		return "Scottie S2";
+	case 60:
+		return "Scottie S1";
+	case 76:
+		return "Scottie DX";
+	case 93:
+		return "PD 50";
+	case 94:
+		return "PD 290";
+	case 95:
+		return "PD 120";
+	case 96:
+		return "PD 180";
+	case 97:
+		return "PD 240";
+	case 98:
+		return "PD 160";
+	case 99:
+		return "PD 90";
+	default:
+		return "unknown";
 	}
 }
 
@@ -60,18 +88,21 @@ namespace
 		size_t begin, end;
 	};
 
-	// Every sync-band run (frequency in the sync band per the Schmitt
-	// trigger) in a frequency buffer, in order. Hysteresis prevents noise
-	// dithering around the band edge from spawning spurious short runs.
-	std::vector<Run> syncRuns(const std::vector<float> &freq)
+	// Every sync-band run (frequency below the Schmitt trigger's enter
+	// threshold) in a frequency buffer. `syncFilterWindow` selects the
+	// pre-trigger SMA size; 1 = identity (raw freq goes straight to the
+	// trigger, preserving edge timing on clean signals).
+	std::vector<Run> syncRuns(const std::vector<float> &freq,
+	                          std::size_t syncFilterWindow)
 	{
 		std::vector<Run> runs;
+		SimpleMovingAverage sma(std::max<std::size_t>(1, syncFilterWindow));
 		SchmittTrigger trig(sstv::SyncEnterHz, sstv::SyncExitHz);
 		bool inRun = false;
 		size_t runBegin = 0;
 		for (size_t i = 0; i < freq.size(); ++i)
 		{
-			const bool sub = (freq[i] > 0.0f) && trig.update(freq[i]);
+			const bool sub = (freq[i] > 0.0f) && trig.update(sma.update(freq[i]));
 			if (sub && !inRun)
 			{
 				inRun = true;
@@ -89,13 +120,26 @@ namespace
 	}
 }
 
-Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate)
+std::size_t Decoder::recommendedSyncFilterWindow(std::uint32_t sampleRate)
+{
+	// ~1.25 ms — long enough to integrate single-sample in-band noise
+	// spikes away, short enough that the smoothing-induced content-
+	// dependent edge shift stays small. Round to an odd window so the
+	// group delay is an integer number of samples (matches xdsopl's
+	// `| 1` idiom).
+	constexpr float SyncFilterMs = 1.25f;
+	std::size_t n = std::max<std::size_t>(1, std::size_t(SyncFilterMs * sampleRate / 1000.0f));
+	return n | 1u;
+}
+
+Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate,
+                                std::size_t syncFilterWindow)
 {
 	VIS vis;
 	auto samp = [&](float ms)
 	{ return size_t(sampleRate * ms / 1000.0f); };
 
-	const std::vector<Run> runs = syncRuns(freq);
+	const std::vector<Run> runs = syncRuns(freq, syncFilterWindow);
 
 	// The header opens with a calibration burst: a 1900 Hz tone, a 10 ms
 	// sync pulse, another 1900 Hz tone, then the VIS section. So the
@@ -153,13 +197,21 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 }
 
 Decoder::Decoder(const std::string &output, uint32_t width,
-                 std::unique_ptr<Demodulator> demod)
+                 std::unique_ptr<Demodulator> demod,
+                 SimpleMovingAverage syncFilter)
 	: width(width),
 	  // Read the sample rate before moving demod (member init follows
 	  // declaration order, so sampleRate is initialised before demod).
 	  sampleRate(demod->sampleRate()),
 	  demod(std::move(demod)),
-	  output(output)
+	  output(output),
+	  // Take the SMA the caller picked. Default = SimpleMovingAverage(1),
+	  // the identity (window 1 → output equals input, delay 0). Ring buffer
+	  // for delay compensation sized accordingly: empty for identity, real
+	  // size when the caller passes a wider SMA. No branches in the hot
+	  // path — polymorphism by data.
+	  syncFilter(std::move(syncFilter)),
+	  syncDelayBuf(this->syncFilter.delay(), 0.0f)
 {
 }
 
@@ -195,7 +247,7 @@ void Decoder::processHeader(size_t index, float freq)
 	if (headerBuf.size() < ms2samp(950.0f) || headerBuf.size() % 128 != 0)
 		return;
 
-	VIS v = detectVIS(headerBuf, sampleRate);
+	VIS v = detectVIS(headerBuf, sampleRate, syncFilter.windowSize());
 	if (!v.found || headerBuf.size() <= v.headerEnd)
 		return;
 
@@ -217,12 +269,21 @@ void Decoder::processHeader(size_t index, float freq)
 
 void Decoder::processImage(size_t index, float freq)
 {
-	// Schmitt-trigger sync detection: silence (freq <= 0) is never sync,
-	// otherwise the trigger latches once freq drops below SyncEnterHz and
-	// only releases when freq rises above the higher SyncExitHz. The
-	// hysteresis prevents noise around the band edge from toggling the
-	// classification per-sample.
-	const bool sub = (freq > 0.0f) && syncTrigger.update(freq);
+	// Update the delay ring buffer first, so a line-start triggered later
+	// in this iteration can pre-pend the most recent `delay` raw samples.
+	if (!syncDelayBuf.empty())
+	{
+		syncDelayBuf[syncDelayPos] = freq;
+		if (++syncDelayPos >= syncDelayBuf.size())
+			syncDelayPos = 0;
+	}
+
+	// Sync detection: optionally smooth the freq stream (when smooth-sync
+	// is enabled syncFilter is a 1.25 ms boxcar, otherwise it's the
+	// identity SMA(1)) then run through the Schmitt trigger. Silence
+	// (freq <= 0) bypasses both — it can never be sync — but it also
+	// doesn't update the smoother, so its state survives a silent gap.
+	const bool sub = (freq > 0.0f) && syncTrigger.update(syncFilter.update(freq));
 
 	// Accumulate frequency samples for the line currently in progress.
 	if (haveLine)
@@ -244,6 +305,7 @@ void Decoder::processImage(size_t index, float freq)
 			haveLine = true;
 			lineStart = index;
 			lineBuf.clear();
+			prependSyncDelayToLineBuf();
 		}
 		else
 		{
@@ -253,7 +315,22 @@ void Decoder::processImage(size_t index, float freq)
 			decodeLine(std::span<const float>(lineBuf.data(), contentLen));
 			lineStart = index;
 			lineBuf.clear();
+			prependSyncDelayToLineBuf();
 		}
+	}
+}
+
+void Decoder::prependSyncDelayToLineBuf()
+{
+	// Walk the ring buffer in chronological order (oldest first) and
+	// dump it into lineBuf. lineBuf[0] then corresponds to clock time
+	// (current index - delay), compensating for the smoothing filter's
+	// group delay: the resulting line content starts at the true sync
+	// end rather than `delay` samples late.
+	for (std::size_t k = 0; k < syncDelayBuf.size(); ++k)
+	{
+		std::size_t idx = (syncDelayPos + k) % syncDelayBuf.size();
+		lineBuf.push_back(syncDelayBuf[idx]);
 	}
 }
 

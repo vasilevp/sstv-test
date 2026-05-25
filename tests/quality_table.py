@@ -156,19 +156,23 @@ def main():
     # --- Noisy decodes (noisy_martin1.wav vs colortest) -------------------
 
     print()
-    print('### Noisy martin1 decode (noisy_martin1.wav vs colortest, mode = Martin M1)')
+    print('### Noisy martin1 decode vs colortest (mode = Martin M1)')
     print()
-    print('| Combination     | Total rows | Compared | PSNR (dB) |  SSIM  |')
-    print('|-----------------|-----------:|---------:|----------:|-------:|')
+    print('Two rows per combination: default behaviour and --smooth-sync.')
+    print()
+    print('| Combination          | smooth-sync | Total rows | PSNR (dB) |  SSIM  |')
+    print('|----------------------|-------------|-----------:|----------:|-------:|')
     martin_info = next(m for m in MODES if m[0] == 'martin1')
-    for demod, filt, label in COMBOS:
-        path = f'exp/schmitt_noisy/{demod}_{filt}.bmp'
-        if not os.path.exists(path):
-            continue
-        m = measure(path, martin_info, ref_color)
-        psnr_str = 'inf' if m['psnr'] == float('inf') else f"{m['psnr']:.2f}"
-        ssim_str = f"{m['ssim']:.3f}"
-        print(f"| {label:<15} | {m['decoded_total_rows']:>10} | {m['compared_rows']:>8} | {psnr_str:>9} | {ssim_str:>6} |")
+    for dirpath, smooth_label in [('exp/schmitt_noisy', 'off'),
+                                   ('exp/schmitt_noisy_smooth', 'on')]:
+        for demod, filt, label in COMBOS:
+            path = f'{dirpath}/{demod}_{filt}.bmp'
+            if not os.path.exists(path):
+                continue
+            m = measure(path, martin_info, ref_color)
+            psnr_str = 'inf' if m['psnr'] == float('inf') else f"{m['psnr']:.2f}"
+            ssim_str = f"{m['ssim']:.3f}"
+            print(f"| {label:<20} | {smooth_label:<11} | {m['decoded_total_rows']:>10} | {psnr_str:>9} | {ssim_str:>6} |")
 
 
 if __name__ == '__main__':

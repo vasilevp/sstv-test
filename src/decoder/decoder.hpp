@@ -7,6 +7,7 @@
 
 #include "demodulator.hpp"
 #include "schmitt_trigger.hpp"
+#include "simple_moving_average.hpp"
 
 // SSTV tone frequencies (Hz) — the decoding-side mirror of the encoder's
 // Synthesizer::Frequency enum.
@@ -66,14 +67,25 @@ public:
 	void finish();
 
 	// Decode the VIS code from an already-demodulated frequency stream.
-	// Returns found == false if the buffer does not yet cover a full header.
-	static VIS detectVIS(const std::vector<float> &freq, uint32_t sampleRate);
+	// Returns found == false if the buffer does not yet cover a full
+	// header. `syncFilterWindow` matches the SMA window the caller
+	// installed in the streaming decoder; pass 1 for no smoothing.
+	static VIS detectVIS(const std::vector<float> &freq, uint32_t sampleRate,
+	                     std::size_t syncFilterWindow = 1);
+
+	// Recommended SMA window for sync smoothing at the given sample rate
+	// (~1.25 ms). Convenience for callers that want to enable smoothing
+	// without picking a window size themselves.
+	static std::size_t recommendedSyncFilterWindow(std::uint32_t sampleRate);
 
 protected:
-	// Constructor injection: the caller picks the demodulator and hands it
-	// in. The Decoder takes ownership and reads the sample rate from it.
+	// Constructor injection: the caller picks the demodulator and the
+	// freq-stream smoother (default = SimpleMovingAverage(1), an
+	// identity — no smoothing). To enable noise robustness, pass
+	// SimpleMovingAverage(recommendedSyncFilterWindow(rate)).
 	Decoder(const std::string &output, uint32_t width,
-	        std::unique_ptr<Demodulator> demod);
+	        std::unique_ptr<Demodulator> demod,
+	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1));
 
 	// Decode one scanline's content — every frequency sample between the end
 	// of its sync pulse and the start of the next line's sync — into one or
@@ -103,6 +115,7 @@ private:
 	void processFreq(size_t index, float freq);
 	void processHeader(size_t index, float freq);
 	void processImage(size_t index, float freq);
+	void prependSyncDelayToLineBuf();
 
 	std::unique_ptr<Demodulator> demod;
 	std::string output;
@@ -117,6 +130,17 @@ private:
 	std::vector<float> headerBuf;
 
 	// Image state: incremental sync-pulse tracking and line accumulation.
+	// The freq stream goes through syncFilter before reaching the Schmitt
+	// trigger; the caller injects the filter (default is SMA(1), an
+	// identity that doesn't smooth anything). Pixel sampling itself uses
+	// the raw freq — the SMA's group delay would smear edges. To
+	// compensate for that delay when locating line boundaries, a small
+	// ring of recent raw freq samples is pre-pended to each new line
+	// buffer; with an identity filter, delay = 0 and the ring is empty,
+	// so this is a no-op.
+	SimpleMovingAverage syncFilter;
+	std::vector<float> syncDelayBuf; // size = syncFilter.delay()
+	std::size_t syncDelayPos = 0;
 	SchmittTrigger syncTrigger{sstv::SyncEnterHz, sstv::SyncExitHz};
 	bool inRun = false;         // currently inside a sync-band run
 	size_t runBegin = 0;        // start index of the current run
