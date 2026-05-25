@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "biquad.hpp"
 #include "demodulator.hpp"
 
 // Streaming complex-baseband FM discriminator — the "real" SSTV demodulator
@@ -35,18 +36,6 @@ private:
 	// LPF cutoff: comfortably above the ±600 Hz baseband swing and far
 	// below the sum-frequency component at 2 * CenterHz = 3400 Hz.
 	static constexpr float LpfCutoffHz = 800.0f;
-
-	// One section of a Butterworth low-pass biquad in transposed direct
-	// form II — cheap, branch-free, two multiplies and two stages of state.
-	struct Biquad
-	{
-		float b0 = 0.0f, b1 = 0.0f, b2 = 0.0f;
-		float a1 = 0.0f, a2 = 0.0f;
-		float z1 = 0.0f, z2 = 0.0f;
-
-		void setLowpass(float cutoffHz, float sampleRate);
-		float process(float x);
-	};
 
 	uint32_t rate_;
 

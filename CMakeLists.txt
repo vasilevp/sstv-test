@@ -67,6 +67,8 @@ add_executable(decoder
   src/decoder/demodulator.cpp
   src/decoder/zero_crossing_demodulator.cpp
   src/decoder/quadrature_demodulator.cpp
+  src/decoder/bandpass_demodulator.cpp
+  src/decoder/biquad.cpp
   src/decoder/robot8.cpp
   src/decoder/robot.cpp
   src/decoder/martin.cpp
@@ -84,7 +86,9 @@ add_executable(demodulator_correctness
   tests/demodulator_correctness.cpp
   src/decoder/demodulator.cpp
   src/decoder/zero_crossing_demodulator.cpp
-  src/decoder/quadrature_demodulator.cpp)
+  src/decoder/quadrature_demodulator.cpp
+  src/decoder/bandpass_demodulator.cpp
+  src/decoder/biquad.cpp)
 target_include_directories(demodulator_correctness PRIVATE src/decoder)
 
 # Correctness test for the encoder (the modulator). Reads each WAV in
@@ -96,6 +100,8 @@ add_executable(modulator_correctness
   src/decoder/decoder.cpp
   src/decoder/demodulator.cpp
   src/decoder/zero_crossing_demodulator.cpp
-  src/decoder/quadrature_demodulator.cpp)
+  src/decoder/quadrature_demodulator.cpp
+  src/decoder/bandpass_demodulator.cpp
+  src/decoder/biquad.cpp)
 target_include_directories(modulator_correctness PRIVATE src/decoder modules)
 target_link_libraries(modulator_correctness PRIVATE wav bmp)

@@ -8,35 +8,6 @@ namespace
 	constexpr float TwoPi = 2.0f * std::numbers::pi_v<float>;
 }
 
-void QuadratureDemodulator::Biquad::setLowpass(float cutoffHz, float sampleRate)
-{
-	// Audio EQ Cookbook (Robert Bristow-Johnson): biquad low-pass with
-	// Q = 1/sqrt(2), the maximally-flat Butterworth shape.
-	const float omega = TwoPi * cutoffHz / sampleRate;
-	const float cosOmega = std::cos(omega);
-	const float sinOmega = std::sin(omega);
-	const float alpha = sinOmega / std::sqrt(2.0f);
-	const float a0 = 1.0f + alpha;
-
-	b0 = (1.0f - cosOmega) * 0.5f / a0;
-	b1 = (1.0f - cosOmega) / a0;
-	b2 = (1.0f - cosOmega) * 0.5f / a0;
-	a1 = -2.0f * cosOmega / a0;
-	a2 = (1.0f - alpha) / a0;
-	z1 = 0.0f;
-	z2 = 0.0f;
-}
-
-float QuadratureDemodulator::Biquad::process(float x)
-{
-	// Transposed direct form II: one multiply-add for the output, two state
-	// updates. Numerically robust and well-suited to single-precision float.
-	const float y = b0 * x + z1;
-	z1 = b1 * x - a1 * y + z2;
-	z2 = b2 * x - a2 * y;
-	return y;
-}
-
 QuadratureDemodulator::QuadratureDemodulator(uint32_t sampleRate)
 	: rate_(sampleRate),
 	  phaseInc_(TwoPi * CenterHz / float(sampleRate))

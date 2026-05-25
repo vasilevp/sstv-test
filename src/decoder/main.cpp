@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "bandpass_demodulator.hpp"
 #include "demodulator.hpp"
 #include "martin.hpp"
 #include "pd.hpp"
@@ -30,13 +31,17 @@ namespace
 		std::println("              for clean synthetic recordings)");
 		std::println("  --demod=iq  quadrature FM discriminator (more robust to");
 		std::println("              noise; the design used by real SSTV decoders)");
+		std::println("  --prefilter biquad bandpass 1000..2400 Hz on the input");
+		std::println("              (rejects mains hum and HF hiss; near no-op on");
+		std::println("              clean recordings)");
 	}
 }
 
 int main(int argc, char *argv[])
 {
-	// Extract --demod= from anywhere in argv; collect positional arguments.
+	// Extract flags from anywhere in argv; collect positional arguments.
 	DemodKind demodKind = DemodKind::ZeroCrossing;
+	bool prefilter = false;
 	std::vector<std::string> positional;
 	for (int i = 1; i < argc; ++i)
 	{
@@ -53,6 +58,10 @@ int main(int argc, char *argv[])
 				std::println("Error: --demod must be 'zc' or 'iq', got '{}'", v);
 				return 1;
 			}
+		}
+		else if (arg == "--prefilter")
+		{
+			prefilter = true;
 		}
 		else
 		{
@@ -78,12 +87,24 @@ int main(int argc, char *argv[])
 		if (samples.empty())
 			throw std::runtime_error("Empty recording");
 
-		std::println("Demodulator: {}", demodKindName(demodKind));
+		std::println("Demodulator: {}{}",
+		             demodKindName(demodKind),
+		             prefilter ? "  (bandpass prefilter on)" : "");
+
+		// Construct a demodulator of the requested kind, optionally wrapped
+		// in a bandpass to reject out-of-band noise on the input.
+		auto makeDemod = [&]()
+		{
+			std::unique_ptr<Demodulator> d = makeDemodulator(demodKind, rate);
+			if (prefilter)
+				d = std::make_unique<BandpassDemodulator>(std::move(d));
+			return d;
+		};
 
 		// Probe the VIS code from the start of the stream to choose the
 		// matching decoder. A live receiver does the same: it listens until
 		// a header arrives, then commits to a mode.
-		auto probe = makeDemodulator(demodKind, rate);
+		auto probe = makeDemod();
 		std::vector<float> probeFreq;
 		size_t probeCount = std::min(samples.size(), size_t(rate) * 3);
 		probeFreq.reserve(probeCount);
@@ -91,10 +112,10 @@ int main(int argc, char *argv[])
 			probeFreq.push_back(probe->process(samples[i]));
 		Decoder::VIS vis = Decoder::detectVIS(probeFreq, rate);
 
-		// Build a fresh demodulator of the chosen kind for the decoder to
-		// own. The probe above used its own instance; this one is the
-		// stream-decoding demod.
-		auto demod = makeDemodulator(demodKind, rate);
+		// Build a fresh demodulator (with prefilter if requested) for the
+		// decoder to own. The probe above used its own instance; this one
+		// is the stream-decoding demod.
+		auto demod = makeDemod();
 
 		std::unique_ptr<Decoder> decoder;
 		switch (vis.found ? vis.code : 0)
