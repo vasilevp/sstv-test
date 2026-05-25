@@ -60,25 +60,31 @@ namespace
 		size_t begin, end;
 	};
 
-	// Every sync-band run (frequency below SyncThreshold) in a frequency
-	// buffer, in order.
+	// Every sync-band run (frequency in the sync band per the Schmitt
+	// trigger) in a frequency buffer, in order. Hysteresis prevents noise
+	// dithering around the band edge from spawning spurious short runs.
 	std::vector<Run> syncRuns(const std::vector<float> &freq)
 	{
 		std::vector<Run> runs;
-		for (size_t i = 0; i < freq.size();)
+		SchmittTrigger trig(sstv::SyncEnterHz, sstv::SyncExitHz);
+		bool inRun = false;
+		size_t runBegin = 0;
+		for (size_t i = 0; i < freq.size(); ++i)
 		{
-			if (freq[i] > 0.0f && freq[i] < sstv::SyncThreshold)
+			const bool sub = (freq[i] > 0.0f) && trig.update(freq[i]);
+			if (sub && !inRun)
 			{
-				size_t begin = i;
-				while (i < freq.size() && freq[i] > 0.0f && freq[i] < sstv::SyncThreshold)
-					++i;
-				runs.push_back({begin, i});
+				inRun = true;
+				runBegin = i;
 			}
-			else
+			else if (!sub && inRun)
 			{
-				++i;
+				inRun = false;
+				runs.push_back({runBegin, i});
 			}
 		}
+		if (inRun)
+			runs.push_back({runBegin, freq.size()});
 		return runs;
 	}
 }
@@ -211,7 +217,12 @@ void Decoder::processHeader(size_t index, float freq)
 
 void Decoder::processImage(size_t index, float freq)
 {
-	const bool sub = freq > 0.0f && freq < sstv::SyncThreshold;
+	// Schmitt-trigger sync detection: silence (freq <= 0) is never sync,
+	// otherwise the trigger latches once freq drops below SyncEnterHz and
+	// only releases when freq rises above the higher SyncExitHz. The
+	// hysteresis prevents noise around the band edge from toggling the
+	// classification per-sample.
+	const bool sub = (freq > 0.0f) && syncTrigger.update(freq);
 
 	// Accumulate frequency samples for the line currently in progress.
 	if (haveLine)

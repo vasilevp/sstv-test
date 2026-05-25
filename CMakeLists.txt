@@ -69,6 +69,7 @@ add_executable(decoder
   src/decoder/quadrature_demodulator.cpp
   src/decoder/bandpass_demodulator.cpp
   src/decoder/biquad.cpp
+  src/decoder/schmitt_trigger.cpp
   src/decoder/robot8.cpp
   src/decoder/robot.cpp
   src/decoder/martin.cpp
@@ -102,6 +103,7 @@ add_executable(modulator_correctness
   src/decoder/zero_crossing_demodulator.cpp
   src/decoder/quadrature_demodulator.cpp
   src/decoder/bandpass_demodulator.cpp
-  src/decoder/biquad.cpp)
+  src/decoder/biquad.cpp
+  src/decoder/schmitt_trigger.cpp)
 target_include_directories(modulator_correctness PRIVATE src/decoder modules)
 target_link_libraries(modulator_correctness PRIVATE wav bmp)

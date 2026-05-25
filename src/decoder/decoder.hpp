@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "demodulator.hpp"
+#include "schmitt_trigger.hpp"
 
 // SSTV tone frequencies (Hz) — the decoding-side mirror of the encoder's
 // Synthesizer::Frequency enum.
@@ -18,10 +19,16 @@ namespace sstv
 	constexpr float VISOne = 1100.0f;  // a VIS data bit valued 1
 	constexpr float VISZero = 1300.0f; // a VIS data bit valued 0
 
-	// A tone below this is treated as sync rather than pixel data. It sits
-	// between SyncPulse (1200) and VISZero (1300) so VIS data bits are not
-	// mistaken for sync pulses, while pixel tones (>= Black) stay well clear.
-	constexpr float SyncThreshold = 1280.0f;
+	// Schmitt-trigger thresholds for sync detection. Enter the "sync"
+	// (below) state when freq drops below SyncEnterHz; exit only when freq
+	// rises strictly above the higher SyncExitHz. The 75 Hz hysteresis gap
+	// suppresses per-sample threshold chatter that would otherwise spawn
+	// spurious short sync runs from noise. Values follow the xdsopl/robot36
+	// design:
+	//   SyncExitHz  = midpoint(SyncPulse, Porch)             = (1200+1500)/2 = 1350
+	//   SyncEnterHz = midpoint(SyncPulse, SyncExitHz)        = (1200+1350)/2 = 1275
+	constexpr float SyncEnterHz = 1275.0f;
+	constexpr float SyncExitHz = 1350.0f;
 
 	// Human-readable name for a VIS mode code, or "unknown".
 	const char *visModeName(uint8_t code);
@@ -110,6 +117,7 @@ private:
 	std::vector<float> headerBuf;
 
 	// Image state: incremental sync-pulse tracking and line accumulation.
+	SchmittTrigger syncTrigger{sstv::SyncEnterHz, sstv::SyncExitHz};
 	bool inRun = false;         // currently inside a sync-band run
 	size_t runBegin = 0;        // start index of the current run
 	bool haveLine = false;      // a scanline is being accumulated
