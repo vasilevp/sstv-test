@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "exponential_moving_average.hpp"
 #include "simple_moving_average.hpp"
 
 #include <LoadBMP/loadbmp.h>
@@ -93,7 +94,7 @@ namespace
 	// pre-trigger SMA size; 1 = identity (raw freq goes straight to the
 	// trigger, preserving edge timing on clean signals).
 	std::vector<Run> syncRuns(const std::vector<float> &freq,
-	                          std::size_t syncFilterWindow)
+							  std::size_t syncFilterWindow)
 	{
 		std::vector<Run> runs;
 		SimpleMovingAverage sma(std::max<std::size_t>(1, syncFilterWindow));
@@ -128,12 +129,11 @@ std::size_t Decoder::recommendedSyncFilterWindow(std::uint32_t sampleRate)
 	// group delay is an integer number of samples (matches xdsopl's
 	// `| 1` idiom).
 	constexpr float SyncFilterMs = 1.25f;
-	std::size_t n = std::max<std::size_t>(1, std::size_t(SyncFilterMs * sampleRate / 1000.0f));
-	return n | 1u;
+	return std::size_t(SyncFilterMs * sampleRate / 1000.0f) | 1u;
 }
 
 Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate,
-                                std::size_t syncFilterWindow)
+								std::size_t syncFilterWindow)
 {
 	VIS vis;
 	auto samp = [&](float ms)
@@ -197,8 +197,8 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 }
 
 Decoder::Decoder(const std::string &output, uint32_t width,
-                 std::unique_ptr<Demodulator> demod,
-                 SimpleMovingAverage syncFilter)
+				 std::unique_ptr<Demodulator> demod,
+				 SimpleMovingAverage syncFilter)
 	: width(width),
 	  // Read the sample rate before moving demod (member init follows
 	  // declaration order, so sampleRate is initialised before demod).
@@ -372,23 +372,73 @@ void Decoder::emitRow(const std::vector<uint8_t> &rgb)
 std::vector<float> Decoder::sampleChannel(std::span<const float> content,
 										  size_t off, size_t span) const
 {
+	// When the channel is heavily over-sampled (many audio samples per
+	// pixel), per-slot box averaging behaves like a wide low-pass that
+	// throws away in-pixel detail — and the line content has plenty of
+	// frequency headroom above the pixel band that wants anti-aliasing.
+	// In that regime, replace the box average with a zero-phase EMA
+	// pre-smooth (forward + reverse first-order IIR, cutoff at pixel
+	// Nyquist) followed by point sampling at slot centres. xdsopl/robot36
+	// uses this design for the PD modes, where it's most clearly a win.
+	//
+	// For the under-sampled regime (few samples per pixel — Robot 36 Y,
+	// Martin M2/M4, etc.), the same trick costs more than it gains: the
+	// EMA does little because pixel-Nyquist sits near sample-Nyquist, and
+	// point sampling loses the sqrt(N) noise reduction the box mean was
+	// giving. Stay with the box mean there.
+	const float samplesPerPixel = width > 0 ? float(span) / float(width) : 0.0f;
+	const bool antiAlias = samplesPerPixel > 4.0f;
+
 	std::vector<float> row(width);
-	for (uint32_t x = 0; x < width; ++x)
+
+	if (antiAlias)
 	{
-		// Pixel x occupies an even slice of the channel's sample span.
-		size_t a = off + span * x / width;
-		size_t b = off + span * (x + 1) / width;
-		if (b <= a)
-			b = a + 1;
+		// Lift the channel into a contiguous working buffer (the EMA can't
+		// pass back over a span<const>), zero-padding any tail that runs
+		// off the end of `content`.
+		std::vector<float> work(span, 0.0f);
+		const size_t copy = std::min(span, content.size() > off ? content.size() - off : 0);
+		for (size_t i = 0; i < copy; ++i)
+			work[i] = content[off + i];
 
-		float acc = 0.0f;
-		size_t n = 0;
-		for (size_t i = a; i < b && i < content.size(); ++i, ++n)
-			acc += content[i];
-		float f = n ? acc / float(n) : 0.0f;
+		ExponentialMovingAverage ema;
+		ema.setCutoff(float(width), float(2 * span), 2);
+		for (size_t i = 0; i < span; ++i)
+			work[i] = ema.avg(work[i]);
+		ema.reset();
+		for (size_t i = span; i-- > 0;)
+			work[i] = ema.avg(work[i]);
 
-		row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
-							0.0f, 255.0f);
+		for (uint32_t x = 0; x < width; ++x)
+		{
+			size_t centre = (span * (2u * x + 1u)) / (2u * width);
+			if (centre >= span)
+				centre = span - 1;
+			const float f = work[centre];
+			row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
+								0.0f, 255.0f);
+		}
 	}
+	else
+	{
+		// Box-average per pixel slot — preserves noise reduction on the
+		// closely-sampled fast modes.
+		for (uint32_t x = 0; x < width; ++x)
+		{
+			size_t a = off + span * x / width;
+			size_t b = off + span * (x + 1) / width;
+			if (b <= a)
+				b = a + 1;
+
+			float acc = 0.0f;
+			size_t n = 0;
+			for (size_t i = a; i < b && i < content.size(); ++i, ++n)
+				acc += content[i];
+			const float f = n ? acc / float(n) : 0.0f;
+			row[x] = std::clamp((f - sstv::Black) / (sstv::White - sstv::Black) * 255.0f,
+								0.0f, 255.0f);
+		}
+	}
+
 	return row;
 }
