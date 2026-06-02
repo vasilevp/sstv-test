@@ -69,6 +69,7 @@ add_executable(decoder
   src/decoder/quadrature_demodulator.cpp
   src/decoder/bandpass_demodulator.cpp
   src/decoder/biquad.cpp
+  src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
   src/decoder/simple_moving_average.cpp
   src/decoder/exponential_moving_average.cpp
@@ -91,7 +92,8 @@ add_executable(demodulator_correctness
   src/decoder/zero_crossing_demodulator.cpp
   src/decoder/quadrature_demodulator.cpp
   src/decoder/bandpass_demodulator.cpp
-  src/decoder/biquad.cpp)
+  src/decoder/biquad.cpp
+  src/decoder/kaiser_fir.cpp)
 target_include_directories(demodulator_correctness PRIVATE src/decoder)
 
 # Correctness test for the encoder (the modulator). Reads each WAV in
@@ -106,6 +108,7 @@ add_executable(modulator_correctness
   src/decoder/quadrature_demodulator.cpp
   src/decoder/bandpass_demodulator.cpp
   src/decoder/biquad.cpp
+  src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
   src/decoder/simple_moving_average.cpp
   src/decoder/exponential_moving_average.cpp)

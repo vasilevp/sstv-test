@@ -12,8 +12,8 @@ QuadratureDemodulator::QuadratureDemodulator(uint32_t sampleRate)
 	: rate_(sampleRate),
 	  phaseInc_(TwoPi * CenterHz / float(sampleRate))
 {
-	lpfI_.setLowpass(LpfCutoffHz, float(sampleRate));
-	lpfQ_.setLowpass(LpfCutoffHz, float(sampleRate));
+	lpfI_.setLowpass(LpfCutoffHz, LpfTransitionHz, float(sampleRate), LpfStopbandDb);
+	lpfQ_.setLowpass(LpfCutoffHz, LpfTransitionHz, float(sampleRate), LpfStopbandDb);
 }
 
 float QuadratureDemodulator::process(float sample)
@@ -30,7 +30,9 @@ float QuadratureDemodulator::process(float sample)
 		phase_ -= TwoPi;
 
 	// Strip the sum-frequency component, leaving the analytic signal
-	// around DC.
+	// around DC. Linear-phase FIR → both branches share an identical
+	// group delay of (N-1)/2 samples; the discriminator sees only the
+	// difference, so the absolute lag falls out.
 	const float i = lpfI_.process(rawI);
 	const float q = lpfQ_.process(rawQ);
 

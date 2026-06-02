@@ -2,8 +2,8 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "biquad.hpp"
 #include "demodulator.hpp"
+#include "kaiser_fir.hpp"
 
 // Streaming complex-baseband FM discriminator — the "real" SSTV demodulator
 // design, as used by QSSTV/MMSSTV and standard FM-demod literature.
@@ -33,9 +33,17 @@ private:
 	// narrow LPF cover the whole tone range.
 	static constexpr float CenterHz = 1700.0f;
 
-	// LPF cutoff: comfortably above the ±600 Hz baseband swing and far
-	// below the sum-frequency component at 2 * CenterHz = 3400 Hz.
+	// LPF passband edge: comfortably above the ±600 Hz baseband swing,
+	// far below the sum-frequency component at 2·CenterHz = 3400 Hz.
 	static constexpr float LpfCutoffHz = 800.0f;
+
+	// Width of the FIR's transition band. Stopband edge therefore lands
+	// at 800 + 900 = 1700 Hz — still ~1.7 kHz clear of the sum frequency.
+	static constexpr float LpfTransitionHz = 900.0f;
+
+	// Stopband attenuation. 50 dB is the standard headroom for audio-band
+	// LPFs and roughly matches the dynamic range of 16-bit PCM input.
+	static constexpr float LpfStopbandDb = 50.0f;
 
 	uint32_t rate_;
 
@@ -44,8 +52,10 @@ private:
 	float phaseInc_;
 
 	// Baseband filters for the in-phase and quadrature branches.
-	Biquad lpfI_;
-	Biquad lpfQ_;
+	// Linear-phase FIRs — the two branches share an identical group delay,
+	// so the I/Q discriminator stays phase-coherent.
+	KaiserFir lpfI_;
+	KaiserFir lpfQ_;
 
 	// Previous baseband I/Q, for the phase-derivative computation.
 	float prevI_ = 0.0f;
