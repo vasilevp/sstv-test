@@ -20,8 +20,10 @@ class Scottie : public Decoder
 public:
 	Scottie(const std::string &output, uint32_t width,
 	        std::unique_ptr<Demodulator> demod, float lineTime,
-	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1))
-		: Decoder(output, width, std::move(demod), std::move(syncFilter)),
+	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
+	        bool cadenceLock = false)
+		: Decoder(output, width, std::move(demod), std::move(syncFilter),
+		          cadenceLock),
 		  lineTime(lineTime)
 	{
 	}
@@ -29,8 +31,12 @@ public:
 protected:
 	void decodeLine(std::span<const float> content) override;
 	size_t nominalContentSamples() const override;
+	size_t nominalLinePeriodSamples() const override;
 
 private:
+	// Sync pulse duration; mirrors the encoder constant Scottie::syncTime in
+	// src/encoder/scottie.hpp.
+	static constexpr float syncPulse = 9.0f;
 	static constexpr float syncPorch = 1.5f; // porch before each channel
 
 	float lineTime;  // per-channel pixel duration, milliseconds

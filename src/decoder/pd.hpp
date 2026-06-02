@@ -20,8 +20,10 @@ public:
 	   uint32_t width,
 	   std::unique_ptr<Demodulator> demod,
 	   float channelTime = 121.6f,
-	   SimpleMovingAverage syncFilter = SimpleMovingAverage(1))
-		: Decoder(output, width, std::move(demod), std::move(syncFilter)),
+	   SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
+	   bool cadenceLock = false)
+		: Decoder(output, width, std::move(demod), std::move(syncFilter),
+		          cadenceLock),
 		  channelTime(channelTime)
 	{
 	}
@@ -29,8 +31,11 @@ public:
 protected:
 	void decodeLine(std::span<const float> content) override;
 	size_t nominalContentSamples() const override;
+	size_t nominalLinePeriodSamples() const override;
 
 private:
+	// Sync pulse duration; mirrors PD::syncPulse in src/encoder/pd.hpp.
+	static constexpr float syncPulse = 20.0f;
 	static constexpr float syncPorch = 2.08f; // porch after the pair's sync
 
 	float channelTime; // per-channel duration, milliseconds

@@ -21,3 +21,8 @@ size_t Robot8::nominalContentSamples() const
 {
 	return ms2samp(lineTime);
 }
+
+size_t Robot8::nominalLinePeriodSamples() const
+{
+	return ms2samp(syncPulse + lineTime);
+}

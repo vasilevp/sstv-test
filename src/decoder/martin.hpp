@@ -16,8 +16,10 @@ class Martin : public Decoder
 public:
 	Martin(const std::string &output, uint32_t width,
 	       std::unique_ptr<Demodulator> demod, uint8_t mode,
-	       SimpleMovingAverage syncFilter = SimpleMovingAverage(1))
-		: Decoder(output, width, std::move(demod), std::move(syncFilter)),
+	       SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
+	       bool cadenceLock = false)
+		: Decoder(output, width, std::move(demod), std::move(syncFilter),
+		          cadenceLock),
 		  mode(mode)
 	{
 	}
@@ -25,6 +27,7 @@ public:
 protected:
 	void decodeLine(std::span<const float> content) override;
 	size_t nominalContentSamples() const override;
+	size_t nominalLinePeriodSamples() const override;
 
 private:
 	// Durations standardised across Martin modes, in milliseconds.

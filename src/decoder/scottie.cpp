@@ -44,3 +44,8 @@ size_t Scottie::nominalContentSamples() const
 	// Three porch+channel groups (red, green, blue).
 	return ms2samp(3 * syncPorch + 3 * lineTime);
 }
+
+size_t Scottie::nominalLinePeriodSamples() const
+{
+	return ms2samp(syncPulse) + nominalContentSamples();
+}

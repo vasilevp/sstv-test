@@ -20,9 +20,11 @@ protected:
 	      uint32_t width,
 	      std::unique_ptr<Demodulator> demod,
 	      SimpleMovingAverage syncFilter,
+	      bool cadenceLock,
 	      float lineTime,
 	      bool fullColor)
-		: Decoder(output, width, std::move(demod), std::move(syncFilter)),
+		: Decoder(output, width, std::move(demod), std::move(syncFilter),
+		          cadenceLock),
 		  lineTime(lineTime),
 		  fullColor(fullColor)
 	{
@@ -30,6 +32,7 @@ protected:
 
 	void decodeLine(std::span<const float> content) override;
 	size_t nominalContentSamples() const override;
+	size_t nominalLinePeriodSamples() const override;
 
 private:
 	// Sync pulse / porch durations, standardised across colour Robot modes.

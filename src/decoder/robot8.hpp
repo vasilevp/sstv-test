@@ -18,8 +18,10 @@ public:
 	       uint32_t width,
 	       std::unique_ptr<Demodulator> demod,
 	       SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
+	       bool cadenceLock = false,
 	       float lineTime = 56.667f)
-		: Decoder(output, width, std::move(demod), std::move(syncFilter)),
+		: Decoder(output, width, std::move(demod), std::move(syncFilter),
+		          cadenceLock),
 		  lineTime(lineTime)
 	{
 	}
@@ -27,7 +29,14 @@ public:
 protected:
 	void decodeLine(std::span<const float> content) override;
 	size_t nominalContentSamples() const override;
+	size_t nominalLinePeriodSamples() const override;
 
 private:
+	// Sync pulse duration; mirrors the encoder default (Robot8::Robot8 in
+	// src/encoder/robot8.hpp). The encoder also takes the figure as a
+	// constructor parameter, but the decoder isn't given a way to override
+	// it — every recording the encoder produces uses 10 ms.
+	static constexpr float syncPulse = 10.0f;
+
 	float lineTime; // pixel-data duration of one scanline, milliseconds
 };

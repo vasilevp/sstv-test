@@ -12,9 +12,10 @@ class Robot72 : public Robot
 public:
 	Robot72(const std::string &output, uint32_t width,
 	        std::unique_ptr<Demodulator> demod,
-	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1))
+	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
+	        bool cadenceLock = false)
 		: Robot(output, width, std::move(demod), std::move(syncFilter),
-		        /*lineTime=*/138.0f, /*fullColor=*/true)
+		        cadenceLock, /*lineTime=*/138.0f, /*fullColor=*/true)
 	{
 	}
 };

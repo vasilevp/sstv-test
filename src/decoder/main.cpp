@@ -40,6 +40,12 @@ namespace
 		std::println("              Schmitt trigger (kills spurious sync runs from");
 		std::println("              in-band hiss; introduces a small content-");
 		std::println("              dependent edge shift, so off by default)");
+		std::println("  --cadence-lock");
+		std::println("              reject Schmitt sync events outside ±3 ms of");
+		std::println("              the predicted next-line position and synthesise");
+		std::println("              one if none arrives — keeps the picture aligned");
+		std::println("              under noise where the sync pulse is lost or");
+		std::println("              false positives fire mid-line");
 	}
 }
 
@@ -49,6 +55,7 @@ int main(int argc, char *argv[])
 	DemodKind demodKind = DemodKind::ZeroCrossing;
 	bool prefilter = false;
 	bool smoothSync = false;
+	bool cadenceLock = false;
 	std::vector<std::string> positional;
 	for (int i = 1; i < argc; ++i)
 	{
@@ -74,6 +81,10 @@ int main(int argc, char *argv[])
 		{
 			smoothSync = true;
 		}
+		else if (arg == "--cadence-lock")
+		{
+			cadenceLock = true;
+		}
 		else
 		{
 			positional.emplace_back(arg);
@@ -98,10 +109,11 @@ int main(int argc, char *argv[])
 		if (samples.empty())
 			throw std::runtime_error("Empty recording");
 
-		std::println("Demodulator: {}{}{}",
+		std::println("Demodulator: {}{}{}{}",
 		             demodKindName(demodKind),
 		             prefilter ? "  +bandpass" : "",
-		             smoothSync ? "  +smooth-sync" : "");
+		             smoothSync ? "  +smooth-sync" : "",
+		             cadenceLock ? "  +cadence-lock" : "");
 
 		// Construct a demodulator of the requested kind, optionally wrapped
 		// in a bandpass to reject out-of-band noise on the input.
@@ -140,71 +152,71 @@ int main(int argc, char *argv[])
 		{
 		// Robot Color
 		case 8:
-			decoder = std::make_unique<Robot36>(output, width, std::move(demod), makeSyncFilter());
+			decoder = std::make_unique<Robot36>(output, width, std::move(demod), makeSyncFilter(), cadenceLock);
 			break;
 		case 12:
-			decoder = std::make_unique<Robot72>(output, width, std::move(demod), makeSyncFilter());
+			decoder = std::make_unique<Robot72>(output, width, std::move(demod), makeSyncFilter(), cadenceLock);
 			break;
 
 		// Martin: M3/M4 share per-line timing with M1/M2; they just send
 		// fewer scanlines, which the streaming decoder counts dynamically.
 		case 44:
 		case 36:
-			decoder = std::make_unique<Martin>(output, width, std::move(demod), 1, makeSyncFilter());
+			decoder = std::make_unique<Martin>(output, width, std::move(demod), 1, makeSyncFilter(), cadenceLock);
 			break;
 		case 40:
 		case 32:
-			decoder = std::make_unique<Martin>(output, width, std::move(demod), 2, makeSyncFilter());
+			decoder = std::make_unique<Martin>(output, width, std::move(demod), 2, makeSyncFilter(), cadenceLock);
 			break;
 
 		// Scottie: S3/S4 likewise share per-line timing with S1/S2.
 		case 60:
 		case 52:
-			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 138.240f, makeSyncFilter());
+			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 138.240f, makeSyncFilter(), cadenceLock);
 			break;
 		case 56:
 		case 48:
-			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 88.064f, makeSyncFilter());
+			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 88.064f, makeSyncFilter(), cadenceLock);
 			break;
 		case 76:
-			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 345.600f, makeSyncFilter());
+			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 345.600f, makeSyncFilter(), cadenceLock);
 			break;
 
 		// PD family. channelTime values back out from the handbook's stated
 		// frame duration: pair = 22.08 ms (sync+porch) + 4 * channelTime,
 		// frame = pair * (lines/2).
 		case 93:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 91.52f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 91.52f, makeSyncFilter(), cadenceLock);
 			break;
 		case 99:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 170.24f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 170.24f, makeSyncFilter(), cadenceLock);
 			break;
 		case 95:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 121.6f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 121.6f, makeSyncFilter(), cadenceLock);
 			break;
 		case 98:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 195.584f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 195.584f, makeSyncFilter(), cadenceLock);
 			break;
 		case 96:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 183.04f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 183.04f, makeSyncFilter(), cadenceLock);
 			break;
 		case 97:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 244.48f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 244.48f, makeSyncFilter(), cadenceLock);
 			break;
 		case 94:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 228.8f, makeSyncFilter());
+			decoder = std::make_unique<PD>(output, width, std::move(demod), 228.8f, makeSyncFilter(), cadenceLock);
 			break;
 
 		// Robot B&W 8 (VIS codes 1/2/3 — one per R/G/B filter component).
 		case 1:
 		case 2:
 		case 3:
-			decoder = std::make_unique<Robot8>(output, width, std::move(demod), makeSyncFilter());
+			decoder = std::make_unique<Robot8>(output, width, std::move(demod), makeSyncFilter(), cadenceLock);
 			break;
 		default:
 			std::println("No decoder for VIS code {}; falling back to Robot 8 B/W",
 			             vis.found ? std::to_string(vis.code) : std::string("(absent)"));
-			decoder = std::make_unique<Robot8>(output, width, std::move(demod), makeSyncFilter());
+			decoder = std::make_unique<Robot8>(output, width, std::move(demod), makeSyncFilter(), cadenceLock);
 			break;
 		}
 

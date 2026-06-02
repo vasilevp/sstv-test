@@ -43,3 +43,8 @@ size_t PD::nominalContentSamples() const
 	// Porch plus four equal-time channels.
 	return ms2samp(syncPorch + 4 * channelTime);
 }
+
+size_t PD::nominalLinePeriodSamples() const
+{
+	return ms2samp(syncPulse) + nominalContentSamples();
+}

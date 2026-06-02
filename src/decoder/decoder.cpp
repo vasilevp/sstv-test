@@ -198,7 +198,8 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 
 Decoder::Decoder(const std::string &output, uint32_t width,
 				 std::unique_ptr<Demodulator> demod,
-				 SimpleMovingAverage syncFilter)
+				 SimpleMovingAverage syncFilter,
+				 bool cadenceLock)
 	: width(width),
 	  // Read the sample rate before moving demod (member init follows
 	  // declaration order, so sampleRate is initialised before demod).
@@ -211,7 +212,8 @@ Decoder::Decoder(const std::string &output, uint32_t width,
 	  // size when the caller passes a wider SMA. No branches in the hot
 	  // path — polymorphism by data.
 	  syncFilter(std::move(syncFilter)),
-	  syncDelayBuf(this->syncFilter.delay(), 0.0f)
+	  syncDelayBuf(this->syncFilter.delay(), 0.0f),
+	  cadenceLock(cadenceLock)
 {
 }
 
@@ -289,8 +291,41 @@ void Decoder::processImage(size_t index, float freq)
 	if (haveLine)
 		lineBuf.push_back(freq);
 
-	// Track sync-band runs. Past the header, every such run is exactly one
-	// scanline sync pulse, so a completed run delimits a scanline.
+	// Cadence-locked synthesis: if a real sync was due by now and didn't
+	// arrive, place a synthetic one at the predicted position. Keeps the
+	// picture geometrically aligned through full-line dropouts. The
+	// `+ cadenceWindow` past predictedEnd is what makes the synthesis
+	// "late" enough that lineBuf contains the entire predicted line plus
+	// the entire predicted sync — so we can split it cleanly.
+	const size_t cadenceWindow = ms2samp(3.0f);
+	if (cadenceLock && haveAnchor && haveLine && !inRun)
+	{
+		const size_t syncSamples = nominalLinePeriodSamples() > nominalContentSamples()
+			? nominalLinePeriodSamples() - nominalContentSamples()
+			: 0;
+		const size_t predictedBegin = lastSyncBegin + expectedPeriod;
+		const size_t predictedEnd = predictedBegin + syncSamples;
+		if (index > predictedEnd + cadenceWindow)
+		{
+			// Decode the line content up to the predicted sync boundary.
+			size_t contentLen = predictedBegin > lineStart ? predictedBegin - lineStart : 0;
+			contentLen = std::min(contentLen, lineBuf.size());
+			decodeLine(std::span<const float>(lineBuf.data(), contentLen));
+			// Drop everything through the synthetic sync; keep whatever
+			// has been accumulated since predictedEnd as the start of the
+			// next line.
+			size_t drop = predictedEnd > lineStart ? predictedEnd - lineStart : 0;
+			drop = std::min(drop, lineBuf.size());
+			lineBuf.erase(lineBuf.begin(), lineBuf.begin() + drop);
+			lineStart = predictedEnd;
+			lastSyncBegin = predictedBegin;
+			// expectedPeriod unchanged — no observation to learn from.
+		}
+	}
+
+	// Track sync-band runs. Past the header, every such run is normally one
+	// scanline sync pulse — except in noisy data where Schmitt blips can
+	// fire mid-line. Cadence validation filters those out.
 	if (sub && !inRun)
 	{
 		inRun = true;
@@ -301,21 +336,65 @@ void Decoder::processImage(size_t index, float freq)
 		inRun = false;
 		if (!haveLine)
 		{
-			// First sync after the header: line 0's content starts here.
+			// First sync after the header: bootstrap. Line 0's content
+			// starts at this sync's end; the cadence anchor is its begin.
 			haveLine = true;
 			lineStart = index;
 			lineBuf.clear();
 			prependSyncDelayToLineBuf();
+			if (cadenceLock)
+			{
+				lastSyncBegin = runBegin;
+				expectedPeriod = nominalLinePeriodSamples();
+				haveAnchor = true;
+				cadenceWarmup = true;
+			}
 		}
-		else
+		else if (!cadenceLock)
 		{
-			// This sync bounds the previous line: [lineStart, runBegin).
+			// Original behaviour: every detected sync ends a line.
 			size_t contentLen = runBegin > lineStart ? runBegin - lineStart : 0;
 			contentLen = std::min(contentLen, lineBuf.size());
 			decodeLine(std::span<const float>(lineBuf.data(), contentLen));
 			lineStart = index;
 			lineBuf.clear();
 			prependSyncDelayToLineBuf();
+		}
+		else
+		{
+			// Cadence validation: accept iff this sync's start is within
+			// ±cadenceWindow of the predicted position, or it's the first
+			// post-bootstrap sync (warmup — Scottie's segment 0 is shorter
+			// than nominal). EMA-update the period estimate on accept so
+			// slow clock skew gets tracked, but skip the update during
+			// warmup since segment 0's interval is structurally off.
+			const size_t predictedBegin = lastSyncBegin + expectedPeriod;
+			const bool inWindow =
+				runBegin + cadenceWindow >= predictedBegin &&
+				runBegin <= predictedBegin + cadenceWindow;
+			if (cadenceWarmup || inWindow)
+			{
+				size_t contentLen = runBegin > lineStart ? runBegin - lineStart : 0;
+				contentLen = std::min(contentLen, lineBuf.size());
+				decodeLine(std::span<const float>(lineBuf.data(), contentLen));
+				lineStart = index;
+				lineBuf.clear();
+				prependSyncDelayToLineBuf();
+				if (!cadenceWarmup)
+				{
+					// EMA, α = 1/4: fast enough to follow a few-ppm clock
+					// skew but slow enough that a single noisy observation
+					// can't whipsaw the lock.
+					const size_t observed = runBegin - lastSyncBegin;
+					expectedPeriod = (3 * expectedPeriod + observed) / 4;
+				}
+				cadenceWarmup = false;
+				lastSyncBegin = runBegin;
+			}
+			// Out-of-window sync: reject as spurious. The line keeps
+			// accumulating; the sync-band samples added to lineBuf
+			// during this run become a small dark notch in the decoded
+			// row, which is far less harmful than ending the line early.
 		}
 	}
 }

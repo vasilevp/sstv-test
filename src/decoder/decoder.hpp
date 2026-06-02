@@ -79,13 +79,15 @@ public:
 	static std::size_t recommendedSyncFilterWindow(std::uint32_t sampleRate);
 
 protected:
-	// Constructor injection: the caller picks the demodulator and the
-	// freq-stream smoother (default = SimpleMovingAverage(1), an
-	// identity — no smoothing). To enable noise robustness, pass
-	// SimpleMovingAverage(recommendedSyncFilterWindow(rate)).
+	// Constructor injection: the caller picks the demodulator, the
+	// freq-stream smoother (default = SimpleMovingAverage(1), the
+	// identity), and whether to engage cadence-locked sync acceptance
+	// (default off — every Schmitt-detected sync edge ends a scanline,
+	// matching the pre-cadence behaviour).
 	Decoder(const std::string &output, uint32_t width,
 	        std::unique_ptr<Demodulator> demod,
-	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1));
+	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
+	        bool cadenceLock = false);
 
 	// Decode one scanline's content — every frequency sample between the end
 	// of its sync pulse and the start of the next line's sync — into one or
@@ -95,6 +97,11 @@ protected:
 	// Nominal sample count of one line's content. Used only to bound the
 	// final line, which has no following sync pulse to delimit it.
 	virtual size_t nominalContentSamples() const = 0;
+
+	// Nominal sample count of the full sync-to-sync line period (sync
+	// pulse + content). The cadence validator uses this as the initial
+	// estimate of the sync interval, then EMA-tracks any clock skew.
+	virtual size_t nominalLinePeriodSamples() const = 0;
 
 	// Append one decoded pixel row (width * 3 bytes, RGB) to the image.
 	void emitRow(const std::vector<uint8_t> &rgb);
@@ -147,6 +154,29 @@ private:
 	bool haveLine = false;      // a scanline is being accumulated
 	size_t lineStart = 0;       // index where the current line's content starts
 	std::vector<float> lineBuf; // frequency samples of the current line
+
+	// Statistical sync-cadence validation (xdsopl/robot36 design). When
+	// enabled, the decoder only accepts a Schmitt-detected sync if it
+	// arrives within `cadenceWindowSamples` of the predicted next-sync
+	// position; spurious sub-1275 Hz noise blips outside that window are
+	// rejected and the current line keeps accumulating. If no real sync
+	// arrives by the deadline, a synthetic one is placed at the predicted
+	// position so the picture stays geometrically aligned through dropouts.
+	// Each accepted observation EMA-updates `expectedPeriod` to track slow
+	// transmitter/receiver clock skew.
+	bool cadenceLock = false;
+	size_t expectedPeriod = 0;  // sync-to-sync interval estimate, samples
+	size_t lastSyncBegin = 0;   // anchor: runBegin of the last accepted sync
+	bool haveAnchor = false;    // expectedPeriod / lastSyncBegin are initialised
+	// Scottie's first segment after the header carries only G+B of line 0
+	// (no R yet), so its sync-to-sync interval is 90..350 ms shorter than
+	// nominal depending on mode — far outside any reasonable cadence window.
+	// `cadenceWarmup` skips validation and EMA learning on the *first*
+	// post-bootstrap sync, letting the anchor shift to wherever segment 0
+	// ended; subsequent segments are nominal-length and validation locks in
+	// from there. Other modes pay no penalty: their first observation is
+	// already at nominal, so accepting it unconditionally is a no-op.
+	bool cadenceWarmup = false;
 
 	std::vector<uint8_t> image; // decoded RGB rows, row-major
 	uint32_t imageHeight = 0;

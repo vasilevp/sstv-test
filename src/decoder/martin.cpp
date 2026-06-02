@@ -32,3 +32,8 @@ size_t Martin::nominalContentSamples() const
 	const float channelTime = lineTime * float(3 - mode);
 	return ms2samp(4 * syncPorch + 3 * channelTime);
 }
+
+size_t Martin::nominalLinePeriodSamples() const
+{
+	return ms2samp(syncPulse) + nominalContentSamples();
+}

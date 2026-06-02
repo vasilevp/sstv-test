@@ -71,3 +71,8 @@ size_t Robot::nominalContentSamples() const
 	return ms2samp(syncPorch + lineTime +
 	               chromaCount * (chromaSep + chromaPorch + lineTime / 2));
 }
+
+size_t Robot::nominalLinePeriodSamples() const
+{
+	return ms2samp(syncPulse) + nominalContentSamples();
+}
