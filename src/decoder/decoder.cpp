@@ -8,7 +8,6 @@
 #include <string>
 
 #include "exponential_moving_average.hpp"
-#include "simple_moving_average.hpp"
 
 #include <LoadBMP/loadbmp.h>
 
@@ -90,20 +89,16 @@ namespace
 	};
 
 	// Every sync-band run (frequency below the Schmitt trigger's enter
-	// threshold) in a frequency buffer. `syncFilterWindow` selects the
-	// pre-trigger SMA size; 1 = identity (raw freq goes straight to the
-	// trigger, preserving edge timing on clean signals).
-	std::vector<Run> syncRuns(const std::vector<float> &freq,
-							  std::size_t syncFilterWindow)
+	// threshold) in a frequency buffer.
+	std::vector<Run> syncRuns(const std::vector<float> &freq)
 	{
 		std::vector<Run> runs;
-		SimpleMovingAverage sma(std::max<std::size_t>(1, syncFilterWindow));
 		SchmittTrigger trig(sstv::SyncEnterHz, sstv::SyncExitHz);
 		bool inRun = false;
 		size_t runBegin = 0;
 		for (size_t i = 0; i < freq.size(); ++i)
 		{
-			const bool sub = (freq[i] > 0.0f) && trig.update(sma.update(freq[i]));
+			const bool sub = (freq[i] > 0.0f) && trig.update(freq[i]);
 			if (sub && !inRun)
 			{
 				inRun = true;
@@ -121,25 +116,13 @@ namespace
 	}
 }
 
-std::size_t Decoder::recommendedSyncFilterWindow(std::uint32_t sampleRate)
-{
-	// ~1.25 ms — long enough to integrate single-sample in-band noise
-	// spikes away, short enough that the smoothing-induced content-
-	// dependent edge shift stays small. Round to an odd window so the
-	// group delay is an integer number of samples (matches xdsopl's
-	// `| 1` idiom).
-	constexpr float SyncFilterMs = 1.25f;
-	return std::size_t(SyncFilterMs * sampleRate / 1000.0f) | 1u;
-}
-
-Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate,
-								std::size_t syncFilterWindow)
+Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate)
 {
 	VIS vis;
 	auto samp = [&](float ms)
 	{ return size_t(sampleRate * ms / 1000.0f); };
 
-	const std::vector<Run> runs = syncRuns(freq, syncFilterWindow);
+	const std::vector<Run> runs = syncRuns(freq);
 
 	// The header opens with a calibration burst: a 1900 Hz tone, a 10 ms
 	// sync pulse, another 1900 Hz tone, then the VIS section. So the
@@ -198,7 +181,6 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 
 Decoder::Decoder(const std::string &output, uint32_t width,
 				 std::unique_ptr<Demodulator> demod,
-				 SimpleMovingAverage syncFilter,
 				 bool cadenceLock)
 	: width(width),
 	  // Read the sample rate before moving demod (member init follows
@@ -206,13 +188,6 @@ Decoder::Decoder(const std::string &output, uint32_t width,
 	  sampleRate(demod->sampleRate()),
 	  demod(std::move(demod)),
 	  output(output),
-	  // Take the SMA the caller picked. Default = SimpleMovingAverage(1),
-	  // the identity (window 1 → output equals input, delay 0). Ring buffer
-	  // for delay compensation sized accordingly: empty for identity, real
-	  // size when the caller passes a wider SMA. No branches in the hot
-	  // path — polymorphism by data.
-	  syncFilter(std::move(syncFilter)),
-	  syncDelayBuf(this->syncFilter.delay(), 0.0f),
 	  cadenceLock(cadenceLock)
 {
 }
@@ -249,7 +224,7 @@ void Decoder::processHeader(size_t index, float freq)
 	if (headerBuf.size() < ms2samp(950.0f) || headerBuf.size() % 128 != 0)
 		return;
 
-	VIS v = detectVIS(headerBuf, sampleRate, syncFilter.windowSize());
+	VIS v = detectVIS(headerBuf, sampleRate);
 	if (!v.found || headerBuf.size() <= v.headerEnd)
 		return;
 
@@ -271,21 +246,9 @@ void Decoder::processHeader(size_t index, float freq)
 
 void Decoder::processImage(size_t index, float freq)
 {
-	// Update the delay ring buffer first, so a line-start triggered later
-	// in this iteration can pre-pend the most recent `delay` raw samples.
-	if (!syncDelayBuf.empty())
-	{
-		syncDelayBuf[syncDelayPos] = freq;
-		if (++syncDelayPos >= syncDelayBuf.size())
-			syncDelayPos = 0;
-	}
-
-	// Sync detection: optionally smooth the freq stream (when smooth-sync
-	// is enabled syncFilter is a 1.25 ms boxcar, otherwise it's the
-	// identity SMA(1)) then run through the Schmitt trigger. Silence
-	// (freq <= 0) bypasses both — it can never be sync — but it also
-	// doesn't update the smoother, so its state survives a silent gap.
-	const bool sub = (freq > 0.0f) && syncTrigger.update(syncFilter.update(freq));
+	// Sync detection: feed the raw freq sample to the Schmitt trigger.
+	// Silence (freq <= 0) bypasses it — silence can never be sync.
+	const bool sub = (freq > 0.0f) && syncTrigger.update(freq);
 
 	// Accumulate frequency samples for the line currently in progress.
 	if (haveLine)
@@ -341,7 +304,6 @@ void Decoder::processImage(size_t index, float freq)
 			haveLine = true;
 			lineStart = index;
 			lineBuf.clear();
-			prependSyncDelayToLineBuf();
 			if (cadenceLock)
 			{
 				lastSyncBegin = runBegin;
@@ -358,7 +320,6 @@ void Decoder::processImage(size_t index, float freq)
 			decodeLine(std::span<const float>(lineBuf.data(), contentLen));
 			lineStart = index;
 			lineBuf.clear();
-			prependSyncDelayToLineBuf();
 		}
 		else
 		{
@@ -379,7 +340,6 @@ void Decoder::processImage(size_t index, float freq)
 				decodeLine(std::span<const float>(lineBuf.data(), contentLen));
 				lineStart = index;
 				lineBuf.clear();
-				prependSyncDelayToLineBuf();
 				if (!cadenceWarmup)
 				{
 					// EMA, α = 1/4: fast enough to follow a few-ppm clock
@@ -396,20 +356,6 @@ void Decoder::processImage(size_t index, float freq)
 			// during this run become a small dark notch in the decoded
 			// row, which is far less harmful than ending the line early.
 		}
-	}
-}
-
-void Decoder::prependSyncDelayToLineBuf()
-{
-	// Walk the ring buffer in chronological order (oldest first) and
-	// dump it into lineBuf. lineBuf[0] then corresponds to clock time
-	// (current index - delay), compensating for the smoothing filter's
-	// group delay: the resulting line content starts at the true sync
-	// end rather than `delay` samples late.
-	for (std::size_t k = 0; k < syncDelayBuf.size(); ++k)
-	{
-		std::size_t idx = (syncDelayPos + k) % syncDelayBuf.size();
-		lineBuf.push_back(syncDelayBuf[idx]);
 	}
 }
 

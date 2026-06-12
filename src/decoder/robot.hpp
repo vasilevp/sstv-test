@@ -19,12 +19,10 @@ protected:
 	Robot(const std::string &output,
 	      uint32_t width,
 	      std::unique_ptr<Demodulator> demod,
-	      SimpleMovingAverage syncFilter,
 	      bool cadenceLock,
 	      float lineTime,
 	      bool fullColor)
-		: Decoder(output, width, std::move(demod), std::move(syncFilter),
-		          cadenceLock),
+		: Decoder(output, width, std::move(demod), cadenceLock),
 		  lineTime(lineTime),
 		  fullColor(fullColor)
 	{

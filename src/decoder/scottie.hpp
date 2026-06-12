@@ -20,10 +20,8 @@ class Scottie : public Decoder
 public:
 	Scottie(const std::string &output, uint32_t width,
 	        std::unique_ptr<Demodulator> demod, float lineTime,
-	        SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
 	        bool cadenceLock = false)
-		: Decoder(output, width, std::move(demod), std::move(syncFilter),
-		          cadenceLock),
+		: Decoder(output, width, std::move(demod), cadenceLock),
 		  lineTime(lineTime)
 	{
 	}

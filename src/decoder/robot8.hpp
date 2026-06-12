@@ -17,11 +17,9 @@ public:
 	Robot8(const std::string &output,
 	       uint32_t width,
 	       std::unique_ptr<Demodulator> demod,
-	       SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
 	       bool cadenceLock = false,
 	       float lineTime = 56.667f)
-		: Decoder(output, width, std::move(demod), std::move(syncFilter),
-		          cadenceLock),
+		: Decoder(output, width, std::move(demod), cadenceLock),
 		  lineTime(lineTime)
 	{
 	}

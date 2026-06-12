@@ -20,10 +20,8 @@ public:
 	   uint32_t width,
 	   std::unique_ptr<Demodulator> demod,
 	   float channelTime = 121.6f,
-	   SimpleMovingAverage syncFilter = SimpleMovingAverage(1),
 	   bool cadenceLock = false)
-		: Decoder(output, width, std::move(demod), std::move(syncFilter),
-		          cadenceLock),
+		: Decoder(output, width, std::move(demod), cadenceLock),
 		  channelTime(channelTime)
 	{
 	}

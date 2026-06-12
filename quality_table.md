@@ -50,23 +50,15 @@ Reference: colortest.bmp (320×240 RGB)
 
 ### Noisy martin1 decode vs colortest (mode = Martin M1)
 
-Every combination of --smooth-sync × --cadence-lock × demod × prefilter.
+Each (demod, prefilter) combination decoded with and without --cadence-lock.
 
-| Combination          | smooth-sync | cadence-lock | Total rows | PSNR (dB) |  SSIM  |
-|----------------------|-------------|--------------|-----------:|----------:|-------:|
-| ZC                   | off         | off          |      10803 |      4.62 |  0.051 |
-| ZC+pf                | off         | off          |        445 |     19.52 |  0.657 |
-| IQ                   | off         | off          |        769 |      4.65 |  0.047 |
-| IQ+pf                | off         | off          |        632 |     15.36 |  0.591 |
-| ZC                   | off         | on           |       4640 |      5.07 |  0.007 |
-| ZC+pf                | off         | on           |        258 |     19.52 |  0.657 |
-| IQ                   | off         | on           |        258 |     14.52 |  0.509 |
-| IQ+pf                | off         | on           |        258 |     21.08 |  0.742 |
-| ZC                   | on          | off          |        297 |      5.46 |  0.018 |
-| ZC+pf                | on          | off          |        262 |     19.58 |  0.662 |
-| IQ                   | on          | off          |        260 |     20.45 |  0.664 |
-| IQ+pf                | on          | off          |        285 |     19.79 |  0.733 |
-| ZC                   | on          | on           |       1736 |      5.11 |  0.004 |
-| ZC+pf                | on          | on           |        258 |     19.58 |  0.662 |
-| IQ                   | on          | on           |        258 |     20.45 |  0.664 |
-| IQ+pf                | on          | on           |        258 |     19.79 |  0.733 |
+| Combination          | cadence-lock | Total rows | PSNR (dB) |  SSIM  |
+|----------------------|--------------|-----------:|----------:|-------:|
+| ZC                   | off          |      10803 |      4.62 |  0.051 |
+| ZC+pf                | off          |        445 |     19.52 |  0.657 |
+| IQ                   | off          |        769 |      4.65 |  0.047 |
+| IQ+pf                | off          |        632 |     15.36 |  0.591 |
+| ZC                   | on           |       4640 |      5.07 |  0.007 |
+| ZC+pf                | on           |        258 |     19.52 |  0.657 |
+| IQ                   | on           |        258 |     14.52 |  0.509 |
+| IQ+pf                | on           |        258 |     21.08 |  0.742 |

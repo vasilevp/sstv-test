@@ -71,7 +71,6 @@ add_executable(decoder
   src/decoder/biquad.cpp
   src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
-  src/decoder/simple_moving_average.cpp
   src/decoder/exponential_moving_average.cpp
   src/decoder/robot8.cpp
   src/decoder/robot.cpp
@@ -110,7 +109,6 @@ add_executable(modulator_correctness
   src/decoder/biquad.cpp
   src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
-  src/decoder/simple_moving_average.cpp
   src/decoder/exponential_moving_average.cpp)
 target_include_directories(modulator_correctness PRIVATE src/decoder modules)
 target_link_libraries(modulator_correctness PRIVATE wav bmp)

@@ -158,18 +158,16 @@ def main():
     print()
     print('### Noisy martin1 decode vs colortest (mode = Martin M1)')
     print()
-    print('Every combination of --smooth-sync × --cadence-lock × demod × prefilter.')
+    print('Each (demod, prefilter) combination decoded with and without --cadence-lock.')
     print()
-    print('| Combination          | smooth-sync | cadence-lock | Total rows | PSNR (dB) |  SSIM  |')
-    print('|----------------------|-------------|--------------|-----------:|----------:|-------:|')
+    print('| Combination          | cadence-lock | Total rows | PSNR (dB) |  SSIM  |')
+    print('|----------------------|--------------|-----------:|----------:|-------:|')
     martin_info = next(m for m in MODES if m[0] == 'martin1')
     noisy_dirs = [
-        ('exp/schmitt_noisy',                'off', 'off'),
-        ('exp/schmitt_noisy_cadence',        'off', 'on'),
-        ('exp/schmitt_noisy_smooth',         'on',  'off'),
-        ('exp/schmitt_noisy_smooth_cadence', 'on',  'on'),
+        ('exp/schmitt_noisy',         'off'),
+        ('exp/schmitt_noisy_cadence', 'on'),
     ]
-    for dirpath, smooth_label, cadence_label in noisy_dirs:
+    for dirpath, cadence_label in noisy_dirs:
         for demod, filt, label in COMBOS:
             path = f'{dirpath}/{demod}_{filt}.bmp'
             if not os.path.exists(path):
@@ -177,7 +175,7 @@ def main():
             m = measure(path, martin_info, ref_color)
             psnr_str = 'inf' if m['psnr'] == float('inf') else f"{m['psnr']:.2f}"
             ssim_str = f"{m['ssim']:.3f}"
-            print(f"| {label:<20} | {smooth_label:<11} | {cadence_label:<12} | {m['decoded_total_rows']:>10} | {psnr_str:>9} | {ssim_str:>6} |")
+            print(f"| {label:<20} | {cadence_label:<12} | {m['decoded_total_rows']:>10} | {psnr_str:>9} | {ssim_str:>6} |")
 
 
 if __name__ == '__main__':
