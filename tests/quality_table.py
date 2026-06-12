@@ -153,29 +153,35 @@ def main():
                         for _, _, l in COMBOS)
         print(f"| {r['mode']:<10}{cells}|")
 
-    # --- Noisy decodes (noisy_martin1.wav vs colortest) -------------------
+    # --- Noisy decodes (noisy_*.wav vs colortest) -------------------------
 
-    print()
-    print('### Noisy martin1 decode vs colortest (mode = Martin M1)')
-    print()
-    print('Each (demod, prefilter) combination decoded with and without --cadence-lock.')
-    print()
-    print('| Combination          | cadence-lock | Total rows | PSNR (dB) |  SSIM  |')
-    print('|----------------------|--------------|-----------:|----------:|-------:|')
-    martin_info = next(m for m in MODES if m[0] == 'martin1')
+    # Mode-name → display label for the section heading.
+    noisy_modes = [
+        ('martin1', 'Martin M1'),
+        ('robot36', 'Robot 36'),
+    ]
     noisy_dirs = [
         ('exp/schmitt_noisy',         'off'),
         ('exp/schmitt_noisy_cadence', 'on'),
     ]
-    for dirpath, cadence_label in noisy_dirs:
-        for demod, filt, label in COMBOS:
-            path = f'{dirpath}/{demod}_{filt}.bmp'
-            if not os.path.exists(path):
-                continue
-            m = measure(path, martin_info, ref_color)
-            psnr_str = 'inf' if m['psnr'] == float('inf') else f"{m['psnr']:.2f}"
-            ssim_str = f"{m['ssim']:.3f}"
-            print(f"| {label:<20} | {cadence_label:<12} | {m['decoded_total_rows']:>10} | {psnr_str:>9} | {ssim_str:>6} |")
+    for mode_name, mode_label in noisy_modes:
+        info = next(m for m in MODES if m[0] == mode_name)
+        print()
+        print(f'### Noisy {mode_name} decode vs colortest (mode = {mode_label})')
+        print()
+        print('Each (demod, prefilter) combination decoded with and without --cadence-lock.')
+        print()
+        print('| Combination          | cadence-lock | Total rows | PSNR (dB) |  SSIM  |')
+        print('|----------------------|--------------|-----------:|----------:|-------:|')
+        for dirpath, cadence_label in noisy_dirs:
+            for demod, filt, label in COMBOS:
+                path = f'{dirpath}/{mode_name}_{demod}_{filt}.bmp'
+                if not os.path.exists(path):
+                    continue
+                m = measure(path, info, ref_color)
+                psnr_str = 'inf' if m['psnr'] == float('inf') else f"{m['psnr']:.2f}"
+                ssim_str = f"{m['ssim']:.3f}"
+                print(f"| {label:<20} | {cadence_label:<12} | {m['decoded_total_rows']:>10} | {psnr_str:>9} | {ssim_str:>6} |")
 
 
 if __name__ == '__main__':

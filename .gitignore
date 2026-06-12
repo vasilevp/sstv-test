@@ -10,3 +10,4 @@ a.out
 # CMake build directory
 /build/
 *~
+*.pyc

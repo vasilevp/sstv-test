@@ -1,6 +1,6 @@
-"""Synthesize a noisy SSTV WAV for testing the input bandpass prefilter.
+"""Synthesize noisy SSTV WAVs for testing decoder robustness.
 
-Takes the clean outputs/martin1.wav and mixes in:
+Takes the clean encoder outputs and mixes in:
   - 60 Hz mains hum at ~half signal amplitude (severe out-of-band noise)
   - broadband white hiss
   - a 5 kHz whistle above the SSTV band
@@ -9,10 +9,15 @@ The hum and whistle live well outside the 1100..2300 Hz SSTV tone range,
 so a well-designed input bandpass should reject them and let the
 downstream demodulator decode the signal cleanly.
 
+Produces noisy variants for both Martin M1 (a slow PAL-like raw-RGB mode)
+and Robot 36 (a faster Y/Cr/Cb mode that alternates chroma channels), so
+the quality table can compare cadence-lock behaviour on different sync
+cadences.
+
 Run from the project root after building the encoder:
 
-    ./build/encoder colortest.bmp          # produces outputs/martin1.wav
-    python3 tests/synthesize_noisy_wav.py  # writes exp/noisy_martin1.wav
+    ./build/encoder colortest.bmp           # produces every outputs/*.wav
+    python3 tests/synthesize_noisy_wav.py   # writes exp/noisy_*.wav
 """
 
 import math
@@ -20,10 +25,16 @@ import os
 import random
 
 
-def main():
-    os.makedirs('exp', exist_ok=True)
+# (mode_name, hum_amp, hiss_amp, whistle_amp). sig_amp is fixed across
+# modes — the encoder writes the signal at a constant level.
+NOISY_MODES = [
+    ('martin1', 30, 12, 15),
+    ('robot36', 30, 12, 15),
+]
 
-    with open('outputs/martin1.wav', 'rb') as f:
+
+def synthesize(mode_name, hum_amp, hiss_amp, whistle_amp):
+    with open(f'outputs/{mode_name}.wav', 'rb') as f:
         data = f.read()
 
     header = data[:44]
@@ -31,12 +42,7 @@ def main():
     n = len(samples)
     fs = 8000
 
-    print(f'samples in martin1.wav: {n:,}')
-
-    sig_amp = 64       # signal sits at about ±64 from 8-bit centre (128)
-    hum_amp = 30       # 60 Hz mains hum — ~half signal amplitude (brutal)
-    hiss_amp = 12      # broadband white noise
-    whistle_amp = 15   # 5 kHz tone above the SSTV band
+    print(f'samples in {mode_name}.wav: {n:,}')
 
     random.seed(42)
     out = bytearray(n)
@@ -49,11 +55,18 @@ def main():
         v = max(-128, min(127, v))
         out[i] = int(v) + 128
 
-    with open('exp/noisy_martin1.wav', 'wb') as f:
+    out_path = f'exp/noisy_{mode_name}.wav'
+    with open(out_path, 'wb') as f:
         f.write(header)
         f.write(bytes(out))
 
-    print('wrote exp/noisy_martin1.wav')
+    print(f'wrote {out_path}')
+
+
+def main():
+    os.makedirs('exp', exist_ok=True)
+    for mode, hum, hiss, whistle in NOISY_MODES:
+        synthesize(mode, hum, hiss, whistle)
 
 
 if __name__ == '__main__':

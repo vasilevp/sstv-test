@@ -11,9 +11,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <cstdio>
 #include <memory>
 #include <numbers>
+#include <print>
 #include <vector>
 
 namespace
@@ -71,14 +71,14 @@ namespace
 
 int main()
 {
-	std::printf("Demodulator correctness test (sample rate %u Hz)\n\n", Rate);
+	std::println("Demodulator correctness test (sample rate {} Hz)\n", Rate);
 
 	// --- Steady-state accuracy ------------------------------------------
 	// 1 s tone at each target frequency, discard the first 50 ms so the
 	// LPF in the IQ demodulator has time to settle.
-	std::printf("== Steady-state (1 s tone, first 50 ms discarded) ==\n");
-	std::printf("%-6s  %-13s  %10s  %10s  %10s  %10s\n",
-	            "freq", "demod", "mean", "error", "stddev", "range");
+	std::println("== Steady-state (1 s tone, first 50 ms discarded) ==");
+	std::println("{:<6}  {:<13}  {:>10}  {:>10}  {:>10}  {:>10}",
+	             "freq", "demod", "mean", "error", "stddev", "range");
 
 	const std::vector<float> testFreqs = {1100, 1200, 1300, 1500, 1700, 1900, 2100, 2300};
 	const size_t analyseFrom = Rate / 20; // 50 ms
@@ -97,17 +97,17 @@ int main()
 					reported.push_back(v);
 			}
 			const Stats s = analyse(reported);
-			std::printf("%6.0f  %-13s  %10.4f  %+10.4f  %10.4f  %10.4f\n",
-			            f, demodName(kind),
-			            s.mean, s.mean - f, s.stddev, s.maximum - s.minimum);
+			std::println("{:6.0f}  {:<13}  {:10.4f}  {:+10.4f}  {:10.4f}  {:10.4f}",
+			             f, demodName(kind),
+			             s.mean, s.mean - f, s.stddev, s.maximum - s.minimum);
 		}
 	}
 
 	// --- Step response --------------------------------------------------
 	// Switch the input from 1900 Hz to 1200 Hz at t=0 and time how long
 	// each demodulator takes to land within ±1 % of the new value.
-	std::printf("\n== Step response (1900 Hz -> 1200 Hz, settling to ±1%%) ==\n");
-	std::printf("%-13s  %12s  %12s\n", "demod", "first <1%", "settled <1%");
+	std::println("\n== Step response (1900 Hz -> 1200 Hz, settling to ±1%) ==");
+	std::println("{:<13}  {:>12}  {:>12}", "demod", "first <1%", "settled <1%");
 	for (auto kind : {DemodKind::ZeroCrossing, DemodKind::Quadrature})
 	{
 		auto d = makeDemodulator(kind, Rate);
@@ -134,16 +134,16 @@ int main()
 				settled = long(i) - long(Rate / 100) + 1;
 		}
 		auto ms = [](long n) { return n < 0 ? -1.0 : 1000.0 * double(n) / double(Rate); };
-		std::printf("%-13s  %9.2f ms  %9.2f ms\n",
-		            demodName(kind), ms(firstWithin), ms(settled));
+		std::println("{:<13}  {:9.2f} ms  {:9.2f} ms",
+		             demodName(kind), ms(firstWithin), ms(settled));
 	}
 
 	// --- Long-stream precision ------------------------------------------
 	// 30 minutes of 1900 Hz — well past float's 24-bit integer-exact
 	// horizon (~35 min at 8 kHz). Tests that neither demodulator has
 	// developed precision drift over the run.
-	std::printf("\n== Long-stream precision (30 min @ 1900 Hz, last 100 ms) ==\n");
-	std::printf("%-13s  %10s  %10s\n", "demod", "mean", "error");
+	std::println("\n== Long-stream precision (30 min @ 1900 Hz, last 100 ms) ==");
+	std::println("{:<13}  {:>10}  {:>10}", "demod", "mean", "error");
 	const size_t longN = size_t(Rate) * 1800;
 	const size_t longSkip = longN - Rate / 10;
 	for (auto kind : {DemodKind::ZeroCrossing, DemodKind::Quadrature})
@@ -161,8 +161,8 @@ int main()
 			}
 		}
 		const double mean = sum / double(count);
-		std::printf("%-13s  %10.4f  %+10.4f\n",
-		            demodName(kind), mean, mean - 1900.0);
+		std::println("{:<13}  {:10.4f}  {:+10.4f}",
+		             demodName(kind), mean, mean - 1900.0);
 	}
 
 	return 0;

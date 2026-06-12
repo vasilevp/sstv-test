@@ -62,3 +62,18 @@ Each (demod, prefilter) combination decoded with and without --cadence-lock.
 | ZC+pf                | on           |        258 |     19.52 |  0.657 |
 | IQ                   | on           |        258 |     14.52 |  0.509 |
 | IQ+pf                | on           |        258 |     21.08 |  0.742 |
+
+### Noisy robot36 decode vs colortest (mode = Robot 36)
+
+Each (demod, prefilter) combination decoded with and without --cadence-lock.
+
+| Combination          | cadence-lock | Total rows | PSNR (dB) |  SSIM  |
+|----------------------|--------------|-----------:|----------:|-------:|
+| ZC                   | off          |       3115 |      4.51 |  0.053 |
+| ZC+pf                | off          |        427 |     13.66 |  0.364 |
+| IQ                   | off          |        601 |      5.12 |  0.017 |
+| IQ+pf                | off          |        592 |     15.18 |  0.465 |
+| ZC                   | on           |        720 |      5.44 |  0.001 |
+| ZC+pf                | on           |        260 |     13.66 |  0.364 |
+| IQ                   | on           |        260 |      9.32 |  0.218 |
+| IQ+pf                | on           |        260 |     15.15 |  0.464 |
