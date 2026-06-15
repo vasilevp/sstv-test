@@ -128,6 +128,12 @@ namespace sstv
 	// high-res PD modes the ISS uses are wider). Unknown codes fall back to 320.
 	uint32_t modeWidth(VisCode code);
 
+	// Native frame height (scanlines) — the "Lines" field of the handbook's
+	// mode table. Only the modes this decoder actually produces an image for
+	// (Robot, Martin, Scottie, PD) are listed; everything else returns 0,
+	// meaning "height not known / don't crop".
+	uint32_t modeHeight(VisCode code);
+
 	// True if `code` names a mode the handbook table recognises.
 	bool isKnownMode(VisCode code);
 
@@ -143,5 +149,6 @@ namespace sstv
 		// Convenience accessors for the code's metadata.
 		const char *name() const { return modeName(code); }
 		uint32_t width() const { return modeWidth(code); }
+		uint32_t height() const { return modeHeight(code); }
 	};
 }

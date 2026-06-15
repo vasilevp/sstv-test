@@ -234,6 +234,57 @@ uint32_t sstv::modeWidth(VisCode code)
 	}
 }
 
+uint32_t sstv::modeHeight(VisCode code)
+{
+	switch (code)
+	{
+		using enum VisCode;
+
+	// Robot
+	case RobotBW8_R:
+	case RobotBW8_G:
+	case RobotBW8_B:
+		return 120;
+	case RobotColor36:
+	case RobotColor72:
+		return 240;
+
+	// Martin
+	case MartinM1:
+	case MartinM2:
+		return 256;
+	case MartinM3:
+	case MartinM4:
+		return 128;
+
+	// Scottie
+	case ScottieS1:
+	case ScottieS2:
+	case ScottieDX:
+		return 256;
+	case ScottieS3:
+	case ScottieS4:
+		return 128;
+
+	// PD
+	case PD50:
+	case PD90:
+		return 256;
+	case PD160:
+		return 400;
+	case PD120:
+	case PD180:
+	case PD240:
+		return 496;
+	case PD290:
+		return 616;
+
+	// Every other (non-decoded) mode: height not tracked.
+	default:
+		return 0;
+	}
+}
+
 bool sstv::isKnownMode(VisCode code)
 {
 	return std::string_view(modeName(code)) != "unknown";
