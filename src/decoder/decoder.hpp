@@ -85,6 +85,7 @@ private:
 	void processFreq(size_t index, float freq);
 	void processHeader(size_t index, float freq);
 	void processImage(size_t index, float freq);
+	void recordSyncInterval(size_t observed);
 
 	std::unique_ptr<Demodulator> demod;
 	std::unique_ptr<RowSink> sink;
@@ -106,28 +107,24 @@ private:
 	size_t lineStart = 0;       // index where the current line's content starts
 	std::vector<float> lineBuf; // frequency samples of the current line
 
-	// Statistical sync-cadence validation (xdsopl/robot36 design). When
-	// enabled, the decoder only accepts a Schmitt-detected sync if it
-	// arrives within `cadenceWindowSamples` of the predicted next-sync
-	// position; spurious sub-1275 Hz noise blips outside that window are
-	// rejected and the current line keeps accumulating. If no real sync
-	// arrives by the deadline, a synthetic one is placed at the predicted
-	// position so the picture stays geometrically aligned through dropouts.
-	// Each accepted observation EMA-updates `expectedPeriod` to track slow
-	// transmitter/receiver clock skew.
+	// Adaptive sync-cadence tracking (xdsopl/robot36 v2 design). The scan-line
+	// period is *measured* from the spacing of recent real sync pulses, never
+	// assumed from the mode's nominal timing — so the decode follows the
+	// transmitter's actual clock and the picture doesn't slant. A detected sync
+	// is accepted when its interval sits near the measured period, re-aligning
+	// the line to the real pulse; a much shorter interval is a spurious
+	// mid-line blip and is ignored (the line keeps accumulating). When a sync
+	// is overdue, a synthetic one is placed at the measured period so dropouts
+	// are bridged at the correct pitch. `scanLinePeriod` is the mean of the
+	// last few accepted intervals, committed only while they agree (low
+	// standard deviation), which stops a stray observation poisoning the lock.
 	bool cadenceLock = false;
-	size_t expectedPeriod = 0;  // sync-to-sync interval estimate, samples
-	size_t lastSyncBegin = 0;   // anchor: runBegin of the last accepted sync
-	bool haveAnchor = false;    // expectedPeriod / lastSyncBegin are initialised
-	// Scottie's first segment after the header carries only G+B of line 0
-	// (no R yet), so its sync-to-sync interval is 90..350 ms shorter than
-	// nominal depending on mode — far outside any reasonable cadence window.
-	// `cadenceWarmup` skips validation and EMA learning on the *first*
-	// post-bootstrap sync, letting the anchor shift to wherever segment 0
-	// ended; subsequent segments are nominal-length and validation locks in
-	// from there. Other modes pay no penalty: their first observation is
-	// already at nominal, so accepting it unconditionally is a no-op.
-	bool cadenceWarmup = false;
+	static constexpr size_t cadenceHistory = 5; // intervals averaged
+	size_t syncIntervals[cadenceHistory] = {};  // recent sync-to-sync intervals
+	size_t syncIntervalCount = 0;                // how many recorded so far
+	size_t scanLinePeriod = 0;  // measured line period, samples (0 = not yet)
+	size_t lastSyncBegin = 0;   // runBegin of the last accepted sync
+	bool haveAnchor = false;    // lastSyncBegin has been initialised
 
 	// Rows are forwarded to `sink` as they're decoded — no per-image buffer.
 	// `imageHeight` is the running count, used for the "decoded N scanlines"

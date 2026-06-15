@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cmath>
 #include <cstddef>
 #include <print>
 #include <stdexcept>
@@ -94,12 +95,12 @@ void Decoder::processImage(size_t index, float freq)
 	// "late" enough that lineBuf contains the entire predicted line plus
 	// the entire predicted sync — so we can split it cleanly.
 	const size_t cadenceWindow = ms2samp(3.0f);
-	if (cadenceLock && haveAnchor && haveLine && !inRun)
+	if (cadenceLock && haveAnchor && scanLinePeriod != 0 && haveLine && !inRun)
 	{
 		const size_t syncSamples = nominalLinePeriodSamples() > nominalContentSamples()
 			? nominalLinePeriodSamples() - nominalContentSamples()
 			: 0;
-		const size_t predictedBegin = lastSyncBegin + expectedPeriod;
+		const size_t predictedBegin = lastSyncBegin + scanLinePeriod;
 		const size_t predictedEnd = predictedBegin + syncSamples;
 		if (index > predictedEnd + cadenceWindow)
 		{
@@ -115,7 +116,7 @@ void Decoder::processImage(size_t index, float freq)
 			lineBuf.erase(lineBuf.begin(), lineBuf.begin() + drop);
 			lineStart = predictedEnd;
 			lastSyncBegin = predictedBegin;
-			// expectedPeriod unchanged — no observation to learn from.
+			// scanLinePeriod unchanged — synthetic line, no new observation.
 		}
 	}
 
@@ -140,9 +141,7 @@ void Decoder::processImage(size_t index, float freq)
 			if (cadenceLock)
 			{
 				lastSyncBegin = runBegin;
-				expectedPeriod = nominalLinePeriodSamples();
 				haveAnchor = true;
-				cadenceWarmup = true;
 			}
 		}
 		else if (!cadenceLock)
@@ -156,40 +155,62 @@ void Decoder::processImage(size_t index, float freq)
 		}
 		else
 		{
-			// Cadence validation: accept iff this sync's start is within
-			// ±cadenceWindow of the predicted position, or it's the first
-			// post-bootstrap sync (warmup — Scottie's segment 0 is shorter
-			// than nominal). EMA-update the period estimate on accept so
-			// slow clock skew gets tracked, but skip the update during
-			// warmup since segment 0's interval is structurally off.
-			const size_t predictedBegin = lastSyncBegin + expectedPeriod;
-			const bool inWindow =
-				runBegin + cadenceWindow >= predictedBegin &&
-				runBegin <= predictedBegin + cadenceWindow;
-			if (cadenceWarmup || inWindow)
+			// Adaptive cadence: re-align to the real pulse whenever it lands
+			// near the measured line period. Until a period is established
+			// (the first few lines) trust every sync, exactly like the
+			// non-locked path; once established, an interval far short of the
+			// period is a spurious mid-line blip — ignore it and keep
+			// accumulating. Re-aligning to the actual sync each line is what
+			// tracks the transmitter clock and keeps the picture un-slanted.
+			const size_t observed = runBegin > lastSyncBegin ? runBegin - lastSyncBegin : 0;
+			bool accept = scanLinePeriod == 0;
+			if (!accept)
+			{
+				const size_t tol = std::max(ms2samp(4.0f), scanLinePeriod / 50);
+				accept = observed + tol >= scanLinePeriod && observed <= scanLinePeriod + tol;
+			}
+			if (accept)
 			{
 				size_t contentLen = runBegin > lineStart ? runBegin - lineStart : 0;
 				contentLen = std::min(contentLen, lineBuf.size());
 				decodeLine(std::span<const float>(lineBuf.data(), contentLen));
 				lineStart = index;
 				lineBuf.clear();
-				if (!cadenceWarmup)
-				{
-					// EMA, α = 1/4: fast enough to follow a few-ppm clock
-					// skew but slow enough that a single noisy observation
-					// can't whipsaw the lock.
-					const size_t observed = runBegin - lastSyncBegin;
-					expectedPeriod = (3 * expectedPeriod + observed) / 4;
-				}
-				cadenceWarmup = false;
+				recordSyncInterval(observed);
 				lastSyncBegin = runBegin;
 			}
-			// Out-of-window sync: reject as spurious. The line keeps
-			// accumulating; the sync-band samples added to lineBuf
-			// during this run become a small dark notch in the decoded
-			// row, which is far less harmful than ending the line early.
+			// Rejected sync: keep accumulating. The sync-band samples become a
+			// small dark notch in the row — far less harmful than ending the
+			// line early on a false trigger.
 		}
 	}
+}
+
+void Decoder::recordSyncInterval(size_t observed)
+{
+	// Ring-buffer the most recent intervals and adopt their mean as the line
+	// period — but only while they agree (standard deviation within ~1 ms). A
+	// transient (Scottie's short first segment, an occasional misdetection)
+	// spikes the spread and is kept out of the estimate until consistent lines
+	// refill the window; meanwhile scanLinePeriod stays at its last good value
+	// (or 0, in which case every sync is still trusted and re-aligned).
+	syncIntervals[syncIntervalCount % cadenceHistory] = observed;
+	++syncIntervalCount;
+	const size_t n = std::min(syncIntervalCount, cadenceHistory);
+	if (n < 3)
+		return;
+	double mean = 0;
+	for (size_t i = 0; i < n; ++i)
+		mean += double(syncIntervals[i]);
+	mean /= double(n);
+	double var = 0;
+	for (size_t i = 0; i < n; ++i)
+	{
+		const double d = double(syncIntervals[i]) - mean;
+		var += d * d;
+	}
+	if (std::sqrt(var / double(n)) <= double(ms2samp(1.0f)))
+		scanLinePeriod = size_t(mean + 0.5);
 }
 
 void Decoder::finish()
