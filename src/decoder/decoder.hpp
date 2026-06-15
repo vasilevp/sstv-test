@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "demodulator.hpp"
+#include "row_sink.hpp"
 #include "schmitt_trigger.hpp"
 
 // SSTV tone frequencies (Hz) — the decoding-side mirror of the encoder's
@@ -71,10 +72,13 @@ public:
 	static VIS detectVIS(const std::vector<float> &freq, uint32_t sampleRate);
 
 protected:
-	// Constructor injection: the caller picks the demodulator and whether
-	// to engage cadence-locked sync acceptance (default off — every
-	// Schmitt-detected sync edge ends a scanline).
-	Decoder(const std::string &output, uint32_t width,
+	// Constructor injection: the caller picks where decoded rows go, the
+	// demodulator, and whether to engage cadence-locked sync acceptance
+	// (default off — every Schmitt-detected sync edge ends a scanline).
+	// The decoder takes ownership of `sink` and calls sink->finish() once
+	// finish() runs, so any subclass-owned per-row routing (TFT, BMP file,
+	// network socket) gets a clean shutdown signal.
+	Decoder(std::unique_ptr<RowSink> sink, uint32_t width,
 	        std::unique_ptr<Demodulator> demod,
 	        bool cadenceLock = false);
 
@@ -113,7 +117,7 @@ private:
 	void processImage(size_t index, float freq);
 
 	std::unique_ptr<Demodulator> demod;
-	std::string output;
+	std::unique_ptr<RowSink> sink;
 
 	enum class State
 	{
@@ -155,7 +159,9 @@ private:
 	// already at nominal, so accepting it unconditionally is a no-op.
 	bool cadenceWarmup = false;
 
-	std::vector<uint8_t> image; // decoded RGB rows, row-major
+	// Rows are forwarded to `sink` as they're decoded — no per-image buffer.
+	// `imageHeight` is the running count, used for the "decoded N scanlines"
+	// summary in finish() and bounded only by the recording length.
 	uint32_t imageHeight = 0;
 
 	size_t globalIndex = 0; // running count of demodulated samples

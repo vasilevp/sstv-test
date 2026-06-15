@@ -14,10 +14,10 @@
 class Martin : public Decoder
 {
 public:
-	Martin(const std::string &output, uint32_t width,
+	Martin(std::unique_ptr<RowSink> sink, uint32_t width,
 	       std::unique_ptr<Demodulator> demod, uint8_t mode,
 	       bool cadenceLock = false)
-		: Decoder(output, width, std::move(demod), cadenceLock),
+		: Decoder(std::move(sink), width, std::move(demod), cadenceLock),
 		  mode(mode)
 	{
 	}

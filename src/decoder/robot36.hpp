@@ -10,11 +10,11 @@
 class Robot36 : public Robot
 {
 public:
-	Robot36(const std::string &output, uint32_t width,
+	Robot36(std::unique_ptr<RowSink> sink, uint32_t width,
 	        std::unique_ptr<Demodulator> demod,
 	        bool cadenceLock = false)
-		: Robot(output, width, std::move(demod), cadenceLock,
-		        /*lineTime=*/88.0f, /*fullColor=*/false)
+		: Robot(std::move(sink), width, std::move(demod), cadenceLock,
+		        88.0f, false)
 	{
 	}
 };

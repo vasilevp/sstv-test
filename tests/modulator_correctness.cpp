@@ -123,7 +123,18 @@ int main()
 	{
 		WAVReader wav(m.wav);
 		const uint32_t rate = wav.sampleRate();
-		const std::vector<float> &samples = wav.samples();
+		// Drain the streaming source into a vector — this offline test
+		// wants random-access slicing into the freq buffer, so streaming
+		// doesn't buy anything here.
+		std::vector<float> samples;
+		std::vector<float> block(4096);
+		while (true)
+		{
+			const std::size_t n = wav.read(block);
+			if (n == 0)
+				break;
+			samples.insert(samples.end(), block.begin(), block.begin() + n);
+		}
 		if (samples.empty())
 		{
 			std::printf("%-17s  empty WAV\n", m.name.c_str());

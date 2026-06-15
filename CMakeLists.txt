@@ -64,6 +64,7 @@ target_link_libraries(encoder PRIVATE wav bmp)
 add_executable(decoder
   src/decoder/main.cpp
   src/decoder/decoder.cpp
+  src/decoder/bmp_row_sink.cpp
   src/decoder/demodulator.cpp
   src/decoder/zero_crossing_demodulator.cpp
   src/decoder/quadrature_demodulator.cpp
@@ -78,7 +79,7 @@ add_executable(decoder
   src/decoder/scottie.cpp
   src/decoder/pd.cpp)
 target_include_directories(decoder PRIVATE src modules)
-target_link_libraries(decoder PRIVATE wav bmp)
+target_link_libraries(decoder PRIVATE wav)
 
 install(TARGETS encoder decoder RUNTIME DESTINATION bin)
 

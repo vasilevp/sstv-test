@@ -16,12 +16,12 @@
 class PD : public Decoder
 {
 public:
-	PD(const std::string &output,
+	PD(std::unique_ptr<RowSink> sink,
 	   uint32_t width,
 	   std::unique_ptr<Demodulator> demod,
 	   float channelTime = 121.6f,
 	   bool cadenceLock = false)
-		: Decoder(output, width, std::move(demod), cadenceLock),
+		: Decoder(std::move(sink), width, std::move(demod), cadenceLock),
 		  channelTime(channelTime)
 	{
 	}

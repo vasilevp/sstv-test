@@ -14,12 +14,12 @@
 class Robot8 : public Decoder
 {
 public:
-	Robot8(const std::string &output,
+	Robot8(std::unique_ptr<RowSink> sink,
 	       uint32_t width,
 	       std::unique_ptr<Demodulator> demod,
 	       bool cadenceLock = false,
 	       float lineTime = 56.667f)
-		: Decoder(output, width, std::move(demod), cadenceLock),
+		: Decoder(std::move(sink), width, std::move(demod), cadenceLock),
 		  lineTime(lineTime)
 	{
 	}

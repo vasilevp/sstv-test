@@ -16,13 +16,13 @@
 class Robot : public Decoder
 {
 protected:
-	Robot(const std::string &output,
+	Robot(std::unique_ptr<RowSink> sink,
 	      uint32_t width,
 	      std::unique_ptr<Demodulator> demod,
 	      bool cadenceLock,
 	      float lineTime,
 	      bool fullColor)
-		: Decoder(output, width, std::move(demod), cadenceLock),
+		: Decoder(std::move(sink), width, std::move(demod), cadenceLock),
 		  lineTime(lineTime),
 		  fullColor(fullColor)
 	{

@@ -9,12 +9,15 @@
 #include <vector>
 
 #include "bandpass_demodulator.hpp"
+#include "bmp_row_sink.hpp"
 #include "demodulator.hpp"
 #include "martin.hpp"
 #include "pd.hpp"
 #include "robot36.hpp"
 #include "robot72.hpp"
 #include "robot8.hpp"
+#include "row_sink.hpp"
+#include "sample_source.hpp"
 #include "scottie.hpp"
 #include "wav.hpp"
 
@@ -45,7 +48,6 @@ namespace
 
 int main(int argc, char *argv[])
 {
-	// Extract flags from anywhere in argv; collect positional arguments.
 	DemodKind demodKind = DemodKind::ZeroCrossing;
 	bool prefilter = false;
 	bool cadenceLock = false;
@@ -92,11 +94,8 @@ int main(int argc, char *argv[])
 		const std::string output = positional[1];
 		uint32_t width = positional.size() == 3 ? uint32_t(std::stoul(positional[2])) : 320;
 
-		WAVReader wav(input);
-		const std::vector<float> &samples = wav.samples();
-		const uint32_t rate = wav.sampleRate();
-		if (samples.empty())
-			throw std::runtime_error("Empty recording");
+		std::unique_ptr<SampleSource> source = std::make_unique<WAVReader>(input);
+		const std::uint32_t rate = source->sampleRate();
 
 		std::println("Demodulator: {}{}{}",
 		             demodKindName(demodKind),
@@ -113,104 +112,133 @@ int main(int argc, char *argv[])
 			return d;
 		};
 
-		// Probe the VIS code from the start of the stream to choose the
-		// matching decoder. A live receiver does the same: it listens until
-		// a header arrives, then commits to a mode.
+		// Pull the first ~3 s of audio from the streaming source into a
+		// reusable buffer: enough for the VIS probe (which needs the whole
+		// calibration + VIS section) and then immediately replayed into the
+		// real decoder so no input sample gets demodulated twice on the
+		// fast path.
+		constexpr std::size_t Block = 4096;
+		const std::size_t probeTarget = std::size_t(rate) * 3;
+		std::vector<float> probeAudio;
+		probeAudio.reserve(probeTarget);
+		std::vector<float> blockBuf(Block);
+		while (probeAudio.size() < probeTarget)
+		{
+			const std::size_t n = source->read(blockBuf);
+			if (n == 0)
+				break;
+			probeAudio.insert(probeAudio.end(), blockBuf.begin(), blockBuf.begin() + n);
+		}
+		if (probeAudio.empty())
+			throw std::runtime_error("Empty recording");
+
+		// Run the probe demodulator over the buffer and look for the VIS
+		// section. A live receiver does the same: it listens until a header
+		// arrives, then commits to a mode.
 		auto probe = makeDemod();
 		std::vector<float> probeFreq;
-		size_t probeCount = std::min(samples.size(), size_t(rate) * 3);
-		probeFreq.reserve(probeCount);
-		for (size_t i = 0; i < probeCount; ++i)
-			probeFreq.push_back(probe->process(samples[i]));
+		probeFreq.reserve(probeAudio.size());
+		for (float s : probeAudio)
+			probeFreq.push_back(probe->process(s));
 		Decoder::VIS vis = Decoder::detectVIS(probeFreq, rate);
 
-		// Build a fresh demodulator (with prefilter if requested) for the
-		// decoder to own. The probe above used its own instance; this one
-		// is the stream-decoding demod.
+		// Build the decoder's own demodulator and row sink. The probe used
+		// its own throwaway demodulator; this one will see every sample of
+		// the recording, including the probe section replayed back below.
 		auto demod = makeDemod();
+		std::unique_ptr<RowSink> sink = std::make_unique<BMPRowSink>(output, width);
 
 		std::unique_ptr<Decoder> decoder;
 		switch (vis.found ? vis.code : 0)
 		{
 		// Robot Color
 		case 8:
-			decoder = std::make_unique<Robot36>(output, width, std::move(demod), cadenceLock);
+			decoder = std::make_unique<Robot36>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 		case 12:
-			decoder = std::make_unique<Robot72>(output, width, std::move(demod), cadenceLock);
+			decoder = std::make_unique<Robot72>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 
 		// Martin: M3/M4 share per-line timing with M1/M2; they just send
 		// fewer scanlines, which the streaming decoder counts dynamically.
 		case 44:
 		case 36:
-			decoder = std::make_unique<Martin>(output, width, std::move(demod), 1, cadenceLock);
+			decoder = std::make_unique<Martin>(std::move(sink), width, std::move(demod), 1, cadenceLock);
 			break;
 		case 40:
 		case 32:
-			decoder = std::make_unique<Martin>(output, width, std::move(demod), 2, cadenceLock);
+			decoder = std::make_unique<Martin>(std::move(sink), width, std::move(demod), 2, cadenceLock);
 			break;
 
 		// Scottie: S3/S4 likewise share per-line timing with S1/S2.
 		case 60:
 		case 52:
-			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 138.240f, cadenceLock);
+			decoder = std::make_unique<Scottie>(std::move(sink), width, std::move(demod), 138.240f, cadenceLock);
 			break;
 		case 56:
 		case 48:
-			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 88.064f, cadenceLock);
+			decoder = std::make_unique<Scottie>(std::move(sink), width, std::move(demod), 88.064f, cadenceLock);
 			break;
 		case 76:
-			decoder = std::make_unique<Scottie>(output, width, std::move(demod), 345.600f, cadenceLock);
+			decoder = std::make_unique<Scottie>(std::move(sink), width, std::move(demod), 345.600f, cadenceLock);
 			break;
 
 		// PD family. channelTime values back out from the handbook's stated
 		// frame duration: pair = 22.08 ms (sync+porch) + 4 * channelTime,
 		// frame = pair * (lines/2).
 		case 93:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 91.52f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 91.52f, cadenceLock);
 			break;
 		case 99:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 170.24f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 170.24f, cadenceLock);
 			break;
 		case 95:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 121.6f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 121.6f, cadenceLock);
 			break;
 		case 98:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 195.584f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 195.584f, cadenceLock);
 			break;
 		case 96:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 183.04f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 183.04f, cadenceLock);
 			break;
 		case 97:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 244.48f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 244.48f, cadenceLock);
 			break;
 		case 94:
-			decoder = std::make_unique<PD>(output, width, std::move(demod), 228.8f, cadenceLock);
+			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 228.8f, cadenceLock);
 			break;
 
 		// Robot B&W 8 (VIS codes 1/2/3 — one per R/G/B filter component).
 		case 1:
 		case 2:
 		case 3:
-			decoder = std::make_unique<Robot8>(output, width, std::move(demod), cadenceLock);
+			decoder = std::make_unique<Robot8>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 		default:
 			std::println("No decoder for VIS code {}; falling back to Robot 8 B/W",
 			             vis.found ? std::to_string(vis.code) : std::string("(absent)"));
-			decoder = std::make_unique<Robot8>(output, width, std::move(demod), cadenceLock);
+			decoder = std::make_unique<Robot8>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 		}
 
-		// Feed the recording to the decoder in fixed-size blocks, the way a
-		// live audio source would deliver it.
-		constexpr size_t Block = 4096;
-		for (size_t i = 0; i < samples.size(); i += Block)
+		// Replay the probe audio into the real decoder, then keep pulling
+		// blocks from the streaming source until EOF — together these cover
+		// the entire recording in one pass without ever materialising it
+		// all in memory.
+		for (std::size_t i = 0; i < probeAudio.size(); i += Block)
 		{
-			size_t n = std::min(Block, samples.size() - i);
-			decoder->feed(std::span<const float>(samples.data() + i, n));
+			const std::size_t n = std::min(Block, probeAudio.size() - i);
+			decoder->feed(std::span<const float>(probeAudio.data() + i, n));
+		}
+		while (true)
+		{
+			const std::size_t n = source->read(blockBuf);
+			if (n == 0)
+				break;
+			decoder->feed(std::span<const float>(blockBuf.data(), n));
 		}
 		decoder->finish();
+		std::println("Wrote {}", output);
 	}
 	catch (const std::exception &e)
 	{

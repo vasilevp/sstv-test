@@ -9,8 +9,6 @@
 
 #include "exponential_moving_average.hpp"
 
-#include <LoadBMP/loadbmp.h>
-
 // SSTV mode names by VIS code, per Bruchanov, "Image Communication on Short
 // Waves" (sstv-handbook.com), chapter 5. The Robot B&W and Robot Color VIS
 // codes come in triplets/groups for separate R/G/B filter components — they
@@ -179,7 +177,7 @@ Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleR
 	return vis;
 }
 
-Decoder::Decoder(const std::string &output, uint32_t width,
+Decoder::Decoder(std::unique_ptr<RowSink> sink, uint32_t width,
 				 std::unique_ptr<Demodulator> demod,
 				 bool cadenceLock)
 	: width(width),
@@ -187,7 +185,7 @@ Decoder::Decoder(const std::string &output, uint32_t width,
 	  // declaration order, so sampleRate is initialised before demod).
 	  sampleRate(demod->sampleRate()),
 	  demod(std::move(demod)),
-	  output(output),
+	  sink(std::move(sink)),
 	  cadenceLock(cadenceLock)
 {
 }
@@ -381,16 +379,14 @@ void Decoder::finish()
 	std::println("{}: {} scanlines x {} px",
 				 sstv::visModeName(vis.code), imageHeight, width);
 
-	if (unsigned err = loadbmp_encode_file(output.c_str(), image.data(),
-										   width, imageHeight, LOADBMP_RGB))
-		throw std::runtime_error("Failed to write BMP (loadbmp error " + std::to_string(err) + ")");
-
-	std::println("Wrote {}", output);
+	// Push the EOS signal to the sink — BMP files patch their header here;
+	// embedded sinks (TFT, SD card) might flush a DMA queue.
+	sink->finish();
 }
 
 void Decoder::emitRow(const std::vector<uint8_t> &rgb)
 {
-	image.insert(image.end(), rgb.begin(), rgb.end());
+	sink->row(std::span<const std::uint8_t>(rgb.data(), rgb.size()));
 	++imageHeight;
 }
 

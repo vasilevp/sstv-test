@@ -18,10 +18,10 @@
 class Scottie : public Decoder
 {
 public:
-	Scottie(const std::string &output, uint32_t width,
+	Scottie(std::unique_ptr<RowSink> sink, uint32_t width,
 	        std::unique_ptr<Demodulator> demod, float lineTime,
 	        bool cadenceLock = false)
-		: Decoder(output, width, std::move(demod), cadenceLock),
+		: Decoder(std::move(sink), width, std::move(demod), cadenceLock),
 		  lineTime(lineTime)
 	{
 	}
