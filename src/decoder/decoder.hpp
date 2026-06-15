@@ -8,32 +8,7 @@
 #include "demodulator.hpp"
 #include "row_sink.hpp"
 #include "schmitt_trigger.hpp"
-
-// SSTV tone frequencies (Hz) — the decoding-side mirror of the encoder's
-// Synthesizer::Frequency enum.
-namespace sstv
-{
-	constexpr float Black = 1500.0f;     // pixel luma 0
-	constexpr float White = 2300.0f;     // pixel luma 255
-	constexpr float SyncPulse = 1200.0f; // scanline / VIS sync tone
-
-	constexpr float VISOne = 1100.0f;  // a VIS data bit valued 1
-	constexpr float VISZero = 1300.0f; // a VIS data bit valued 0
-
-	// Schmitt-trigger thresholds for sync detection. Enter the "sync"
-	// (below) state when freq drops below SyncEnterHz; exit only when freq
-	// rises strictly above the higher SyncExitHz. The 75 Hz hysteresis gap
-	// suppresses per-sample threshold chatter that would otherwise spawn
-	// spurious short sync runs from noise. Values follow the xdsopl/robot36
-	// design:
-	//   SyncExitHz  = midpoint(SyncPulse, Porch)             = (1200+1500)/2 = 1350
-	//   SyncEnterHz = midpoint(SyncPulse, SyncExitHz)        = (1200+1350)/2 = 1275
-	constexpr float SyncEnterHz = 1275.0f;
-	constexpr float SyncExitHz = 1350.0f;
-
-	// Human-readable name for a VIS mode code, or "unknown".
-	const char *visModeName(uint8_t code);
-}
+#include "vis_detector.hpp" // sstv tone constants, visModeName, Vis, VisDetector
 
 // Streaming base class for SSTV mode decoders.
 //
@@ -51,13 +26,7 @@ public:
 
 	// Decoded header VIS (Vertical Interval Signalling) code: the value the
 	// encoder writes to identify the SSTV mode.
-	struct VIS
-	{
-		bool found = false;    // the header VIS section was located
-		uint8_t code = 0;      // 7-bit mode code
-		bool parityOK = false; // decoded parity bit matched the code
-		size_t headerEnd = 0;  // sample index just past the VIS stop marker
-	};
+	using VIS = sstv::Vis;
 
 	// Push a block of normalised audio samples ([-1, 1)). May be called any
 	// number of times; decoding happens incrementally as data arrives.
@@ -121,12 +90,12 @@ private:
 
 	enum class State
 	{
-		Header, // accumulating the calibration + VIS header
+		Header, // hunting for the calibration + VIS header
 		Image,  // tracking scanline syncs and decoding lines
 	} state = State::Header;
 
-	// Header state: frequency samples buffered until the VIS code is read.
-	std::vector<float> headerBuf;
+	// Header state: streaming VIS detector, fed one sample at a time.
+	VisDetector visDetector;
 
 	// Image state: incremental sync-pulse tracking and line accumulation.
 	SchmittTrigger syncTrigger{sstv::SyncEnterHz, sstv::SyncExitHz};

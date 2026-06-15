@@ -19,6 +19,7 @@
 #include "row_sink.hpp"
 #include "sample_source.hpp"
 #include "scottie.hpp"
+#include "vis_detector.hpp"
 #include "wav_sample_source.hpp"
 
 namespace
@@ -112,35 +113,42 @@ int main(int argc, char *argv[])
 			return d;
 		};
 
-		// Pull the first ~3 s of audio from the streaming source into a
-		// reusable buffer: enough for the VIS probe (which needs the whole
-		// calibration + VIS section) and then immediately replayed into the
-		// real decoder so no input sample gets demodulated twice on the
-		// fast path.
+		// Pull audio from the streaming source into a reusable buffer and probe
+		// it for the VIS header sample-by-sample through a streaming detector,
+		// stopping as soon as the header is located (or after HeaderSearchSec
+		// without one). The buffer is replayed into the real decoder below, so
+		// no input is lost. A live receiver behaves the same: it listens until
+		// a header arrives, then commits to a mode.
+		//
+		// Real off-air recordings carry several seconds of voice and static
+		// before the SSTV header (the ISS/ARISS recordings run up to ~5.6 s),
+		// so search generously. This bound is the caller's policy — the
+		// streaming Decoder itself imposes none.
+		constexpr float HeaderSearchSec = 15.0f;
 		constexpr std::size_t Block = 4096;
-		const std::size_t probeTarget = std::size_t(rate) * 3;
+		const std::size_t probeCap = std::size_t(rate * HeaderSearchSec);
 		std::vector<float> probeAudio;
-		probeAudio.reserve(probeTarget);
 		std::vector<float> blockBuf(Block);
-		while (probeAudio.size() < probeTarget)
+		auto probe = makeDemod();
+		VisDetector probeDetector(rate);
+		Decoder::VIS vis;
+		while (!vis.found && probeAudio.size() < probeCap)
 		{
 			const std::size_t n = source->read(blockBuf);
 			if (n == 0)
 				break;
-			probeAudio.insert(probeAudio.end(), blockBuf.begin(), blockBuf.begin() + n);
+			for (std::size_t i = 0; i < n; ++i)
+			{
+				probeAudio.push_back(blockBuf[i]);
+				if (probeDetector.update(probe->process(blockBuf[i])))
+				{
+					vis = probeDetector.result();
+					break;
+				}
+			}
 		}
 		if (probeAudio.empty())
 			throw std::runtime_error("Empty recording");
-
-		// Run the probe demodulator over the buffer and look for the VIS
-		// section. A live receiver does the same: it listens until a header
-		// arrives, then commits to a mode.
-		auto probe = makeDemod();
-		std::vector<float> probeFreq;
-		probeFreq.reserve(probeAudio.size());
-		for (float s : probeAudio)
-			probeFreq.push_back(probe->process(s));
-		Decoder::VIS vis = Decoder::detectVIS(probeFreq, rate);
 
 		// Build the decoder's own demodulator and row sink. The probe used
 		// its own throwaway demodulator; this one will see every sample of

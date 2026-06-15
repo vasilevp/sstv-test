@@ -78,103 +78,16 @@ const char *sstv::visModeName(uint8_t code)
 	}
 }
 
-namespace
-{
-	// A contiguous run of sync-band frequency samples.
-	struct Run
-	{
-		size_t begin, end;
-	};
-
-	// Every sync-band run (frequency below the Schmitt trigger's enter
-	// threshold) in a frequency buffer.
-	std::vector<Run> syncRuns(const std::vector<float> &freq)
-	{
-		std::vector<Run> runs;
-		SchmittTrigger trig(sstv::SyncEnterHz, sstv::SyncExitHz);
-		bool inRun = false;
-		size_t runBegin = 0;
-		for (size_t i = 0; i < freq.size(); ++i)
-		{
-			const bool sub = (freq[i] > 0.0f) && trig.update(freq[i]);
-			if (sub && !inRun)
-			{
-				inRun = true;
-				runBegin = i;
-			}
-			else if (!sub && inRun)
-			{
-				inRun = false;
-				runs.push_back({runBegin, i});
-			}
-		}
-		if (inRun)
-			runs.push_back({runBegin, freq.size()});
-		return runs;
-	}
-}
-
 Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate)
 {
-	VIS vis;
-	auto samp = [&](float ms)
-	{ return size_t(sampleRate * ms / 1000.0f); };
-
-	const std::vector<Run> runs = syncRuns(freq);
-
-	// The header opens with a calibration burst: a 1900 Hz tone, a 10 ms
-	// sync pulse, another 1900 Hz tone, then the VIS section. So the
-	// calibration pulse is the first sync-band run and the VIS start
-	// marker is the very next one.
-	size_t cal = runs.size();
-	for (size_t i = 0; i < runs.size(); ++i)
-	{
-		float durMs = 1000.0f * float(runs[i].end - runs[i].begin) / float(sampleRate);
-		if (durMs >= 4.0f) // skip sub-millisecond zero-crossing glitches
-		{
-			cal = i;
+	// Replay the buffer through the streaming detector in one pass; the same
+	// state machine that runs live drives this offline probe. Returns the
+	// first lock, or a not-found result if the buffer holds no header.
+	VisDetector det(sampleRate);
+	for (float f : freq)
+		if (det.update(f))
 			break;
-		}
-	}
-	if (cal + 1 >= runs.size())
-		return vis; // header not (yet) recognisable; vis.found stays false
-
-	// The VIS section is ten consecutive 30 ms elements, starting at the
-	// start marker run:
-	//   [start marker] [7 data bits, LSB first] [parity] [stop marker]
-	const size_t visStart = runs[cal + 1].begin;
-	constexpr float ElementMs = 30.0f;
-	if (visStart + samp(10 * ElementMs) > freq.size())
-		return vis; // the buffer does not yet cover the whole VIS section
-
-	// Mean frequency of the central third of VIS element `slot`, sampled
-	// clear of the transitions at each element boundary.
-	auto element = [&](int slot) -> float
-	{
-		size_t a = visStart + samp(slot * ElementMs + 10.0f);
-		size_t b = visStart + samp(slot * ElementMs + 20.0f);
-		float acc = 0.0f;
-		size_t n = 0;
-		for (size_t i = a; i < b && i < freq.size(); ++i, ++n)
-			acc += freq[i];
-		return n ? acc / float(n) : 0.0f;
-	};
-
-	// Data bits: 1100 Hz = 1, 1300 Hz = 0, split at SyncPulse (1200 Hz).
-	uint8_t code = 0;
-	for (int bit = 0; bit < 7; ++bit)
-		if (element(1 + bit) < sstv::SyncPulse)
-			code |= uint8_t(1u << bit);
-
-	const bool parityBit = element(8) < sstv::SyncPulse;
-
-	vis.found = true;
-	vis.code = code;
-	// The encoder writes an even-parity bit: it is 1 iff the code has an
-	// odd number of set bits.
-	vis.parityOK = (std::popcount(code) & 1) == int(parityBit);
-	vis.headerEnd = visStart + samp(10 * ElementMs);
-	return vis;
+	return det.result();
 }
 
 Decoder::Decoder(std::unique_ptr<RowSink> sink, uint32_t width,
@@ -186,6 +99,7 @@ Decoder::Decoder(std::unique_ptr<RowSink> sink, uint32_t width,
 	  sampleRate(demod->sampleRate()),
 	  demod(std::move(demod)),
 	  sink(std::move(sink)),
+	  visDetector(sampleRate),
 	  cadenceLock(cadenceLock)
 {
 }
@@ -211,35 +125,24 @@ void Decoder::processFreq(size_t index, float freq)
 
 void Decoder::processHeader(size_t index, float freq)
 {
-	(void)index;
-	headerBuf.push_back(freq);
-
-	if (headerBuf.size() > ms2samp(5000.0f))
-		throw std::runtime_error("No VIS header found in the first 5 s of audio");
-
-	// Poll for a complete VIS code once enough of the header could be
-	// present; the header runs ~900 ms before the first scanline.
-	if (headerBuf.size() < ms2samp(950.0f) || headerBuf.size() % 128 != 0)
+	// Feed the sample to the streaming detector; it keeps its own state, so
+	// this is O(1) per sample with no rescanning. No header-search timeout
+	// here: this is a streaming decoder, so how long to wait for a header is
+	// the caller's policy. If the stream ends while still hunting, finish()
+	// reports the failure.
+	if (!visDetector.update(freq))
 		return;
 
-	VIS v = detectVIS(headerBuf, sampleRate);
-	if (!v.found || headerBuf.size() <= v.headerEnd)
-		return;
-
-	// The header is fully buffered: lock in the mode and switch to image
-	// decoding, replaying the samples already received past the header.
-	vis = v;
+	// Lock in the mode and switch to image decoding. The detector locks on
+	// the sample just past the VIS stop marker, so this very sample is the
+	// first one of the image — hand it straight to processImage().
+	vis = visDetector.result();
 	std::println("VIS code: {} ({}){}", int(vis.code), sstv::visModeName(vis.code),
 				 vis.parityOK ? "" : "  [PARITY MISMATCH]");
 	if (!vis.parityOK)
 		std::println("  warning: VIS parity check failed; the recording may be corrupt");
 	state = State::Image;
-
-	std::vector<float> tail(headerBuf.begin() + vis.headerEnd, headerBuf.end());
-	headerBuf.clear();
-	headerBuf.shrink_to_fit();
-	for (size_t i = 0; i < tail.size(); ++i)
-		processImage(vis.headerEnd + i, tail[i]);
+	processImage(index, freq);
 }
 
 void Decoder::processImage(size_t index, float freq)
