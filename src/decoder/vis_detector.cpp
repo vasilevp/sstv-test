@@ -1,7 +1,6 @@
 #include "vis_detector.hpp"
 
 #include <bit>
-#include <string>
 
 namespace
 {
@@ -29,11 +28,12 @@ sstv::Vis VisDetector::finalize(const Candidate &c) const
 	if (el(0) >= sstv::SyncEnterHz || el(9) >= sstv::SyncEnterHz)
 		return v;
 	// Data bits: 1100 Hz = 1, 1300 Hz = 0, split at SyncPulse (1200 Hz).
-	uint8_t code = 0;
+	uint8_t bits = 0;
 	for (int bit = 0; bit < 7; ++bit)
 		if (el(1 + bit) < sstv::SyncPulse)
-			code |= uint8_t(1u << bit);
-	if (std::string(sstv::visModeName(code)) == "unknown")
+			bits |= uint8_t(1u << bit);
+	const sstv::VisCode code{bits};
+	if (!sstv::isKnownMode(code))
 		return v;
 
 	const bool parityBit = el(8) < sstv::SyncPulse;
@@ -41,7 +41,7 @@ sstv::Vis VisDetector::finalize(const Candidate &c) const
 	v.code = code;
 	// The encoder writes an even-parity bit: it is 1 iff the code has an odd
 	// number of set bits.
-	v.parityOK = (std::popcount(code) & 1) == int(parityBit);
+	v.parityOK = (std::popcount(bits) & 1) == int(parityBit);
 	v.headerEnd = c.start + samp(10 * ElementMs);
 	return v;
 }

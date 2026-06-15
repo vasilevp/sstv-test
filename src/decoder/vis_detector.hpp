@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "schmitt_trigger.hpp"
+#include "vis.hpp"
 
 // SSTV tone frequencies (Hz) — the decoding-side mirror of the encoder's
 // Synthesizer::Frequency enum.
@@ -28,26 +29,6 @@ namespace sstv
 	constexpr float SyncEnterHz = 1275.0f;
 	constexpr float SyncExitHz = 1350.0f;
 
-	// Human-readable name for a VIS mode code, or "unknown".
-	const char *visModeName(uint8_t code);
-
-	// Native scanline width (luma pixels per line) for a VIS mode code — the
-	// pixel grid the transmitter sampled its image into. The decoder resamples
-	// each line to this many columns so the output keeps the mode's intended
-	// aspect ratio; most modes are 320, but the high-res PD modes the ISS uses
-	// are wider (PD120/180/240 = 640, PD160 = 512, PD290 = 800). Unknown codes
-	// fall back to 320.
-	uint32_t visModeWidth(uint8_t code);
-
-	// Decoded header VIS (Vertical Interval Signalling) code: the value the
-	// encoder writes to identify the SSTV mode.
-	struct Vis
-	{
-		bool found = false;    // the header VIS section was located
-		uint8_t code = 0;      // 7-bit mode code
-		bool parityOK = false; // decoded parity bit matched the code
-		size_t headerEnd = 0;  // sample index just past the VIS stop marker
-	};
 }
 
 // Streaming detector for the calibration / VIS header.

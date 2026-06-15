@@ -1,6 +1,7 @@
 *.mp3
 *.wav
 *.bmp
+*.png
 *.ogg
 *.o
 a.out

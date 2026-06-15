@@ -6,6 +6,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "bandpass_demodulator.hpp"
@@ -19,6 +20,7 @@
 #include "row_sink.hpp"
 #include "sample_source.hpp"
 #include "scottie.hpp"
+#include "vis.hpp"
 #include "vis_detector.hpp"
 #include "wav_sample_source.hpp"
 
@@ -182,81 +184,83 @@ int main(int argc, char *argv[])
 		// modes from decoding at the 320 default and coming out vertically
 		// stretched — the row count is fixed by the transmission, so an
 		// under-wide grid squashes the aspect ratio.
-		const uint32_t width = widthOverride
-		                           ? cliWidth
-		                           : sstv::visModeWidth(vis.found ? vis.code : 0);
+		const uint32_t width = widthOverride ? cliWidth
+		                       : vis.found  ? vis.width()
+		                                    : 320u;
 
 		std::unique_ptr<RowSink> sink = std::make_unique<BMPRowSink>(output, width);
 
+		using sstv::VisCode;
 		std::unique_ptr<Decoder> decoder;
-		switch (vis.found ? vis.code : 0)
+		switch (vis.found ? vis.code : VisCode::RobotColor12)
 		{
 		// Robot Color
-		case 8:
+		case VisCode::RobotColor36:
 			decoder = std::make_unique<Robot36>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
-		case 12:
+		case VisCode::RobotColor72:
 			decoder = std::make_unique<Robot72>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 
 		// Martin: M3/M4 share per-line timing with M1/M2; they just send
 		// fewer scanlines, which the streaming decoder counts dynamically.
-		case 44:
-		case 36:
+		case VisCode::MartinM1:
+		case VisCode::MartinM3:
 			decoder = std::make_unique<Martin>(std::move(sink), width, std::move(demod), 1, cadenceLock);
 			break;
-		case 40:
-		case 32:
+		case VisCode::MartinM2:
+		case VisCode::MartinM4:
 			decoder = std::make_unique<Martin>(std::move(sink), width, std::move(demod), 2, cadenceLock);
 			break;
 
 		// Scottie: S3/S4 likewise share per-line timing with S1/S2.
-		case 60:
-		case 52:
+		case VisCode::ScottieS1:
+		case VisCode::ScottieS3:
 			decoder = std::make_unique<Scottie>(std::move(sink), width, std::move(demod), 138.240f, cadenceLock);
 			break;
-		case 56:
-		case 48:
+		case VisCode::ScottieS2:
+		case VisCode::ScottieS4:
 			decoder = std::make_unique<Scottie>(std::move(sink), width, std::move(demod), 88.064f, cadenceLock);
 			break;
-		case 76:
+		case VisCode::ScottieDX:
 			decoder = std::make_unique<Scottie>(std::move(sink), width, std::move(demod), 345.600f, cadenceLock);
 			break;
 
 		// PD family. channelTime values back out from the handbook's stated
 		// frame duration: pair = 22.08 ms (sync+porch) + 4 * channelTime,
 		// frame = pair * (lines/2).
-		case 93:
+		case VisCode::PD50:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 91.52f, cadenceLock);
 			break;
-		case 99:
+		case VisCode::PD90:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 170.24f, cadenceLock);
 			break;
-		case 95:
+		case VisCode::PD120:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 121.6f, cadenceLock);
 			break;
-		case 98:
+		case VisCode::PD160:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 195.584f, cadenceLock);
 			break;
-		case 96:
+		case VisCode::PD180:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 183.04f, cadenceLock);
 			break;
-		case 97:
+		case VisCode::PD240:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 244.48f, cadenceLock);
 			break;
-		case 94:
+		case VisCode::PD290:
 			decoder = std::make_unique<PD>(std::move(sink), width, std::move(demod), 228.8f, cadenceLock);
 			break;
 
 		// Robot B&W 8 (VIS codes 1/2/3 — one per R/G/B filter component).
-		case 1:
-		case 2:
-		case 3:
+		case VisCode::RobotBW8_R:
+		case VisCode::RobotBW8_G:
+		case VisCode::RobotBW8_B:
 			decoder = std::make_unique<Robot8>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 		default:
 			std::println("No decoder for VIS code {}; falling back to Robot 8 B/W",
-			             vis.found ? std::to_string(vis.code) : std::string("(absent)"));
+			             vis.found ? std::to_string(int(std::to_underlying(vis.code)))
+			                       : std::string("(absent)"));
 			decoder = std::make_unique<Robot8>(std::move(sink), width, std::move(demod), cadenceLock);
 			break;
 		}
