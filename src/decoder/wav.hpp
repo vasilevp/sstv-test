@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -8,20 +9,16 @@
 
 #include "sample_source.hpp"
 
-extern "C"
-{
-#include <C-Wav-Lib/wav.h>
-}
-
 // Streaming RIFF/WAV reader. The header is parsed once at construction;
 // subsequent read() calls pull PCM bytes from the file in chunks and convert
 // them to normalised mono floats on the fly, so the whole recording never
 // has to live in memory.
 //
-// Supports 8-bit (unsigned) and 16-bit (signed) PCM, mono or multi-channel
-// (extra channels are averaged down to mono). C-Wav-Lib's own
-// read_wav_samples() is not used: it has out-of-bounds indexing bugs, so
-// the PCM payload is read directly here instead.
+// Supports the canonical 44-byte PCM/RIFF header layout (RIFF + WAVE + fmt
+// + data, in that order) for 8-bit (unsigned) and 16-bit (signed) samples,
+// mono or multi-channel. Extra channels are averaged down to mono on
+// read(). Files with extra chunks (LIST/INFO, fact, ...) or non-16-byte
+// fmt chunks are rejected — the project's encoder doesn't write those.
 class WAVReader : public SampleSource
 {
 public:
@@ -31,18 +28,43 @@ public:
 		if (!file)
 			throw std::runtime_error("Failed to open WAV for reading: " + name);
 
-		wav_header_t hdr{};
-		if (int err = read_wav_header(file, &hdr); err != 0)
+		// Read the canonical 44-byte RIFF/WAVE/fmt/data header and validate
+		// every field that gates the streaming PCM decode below.
+		unsigned char hdr[44];
+		if (std::fread(hdr, 1, sizeof(hdr), file) != sizeof(hdr))
+		{
+			closeFile();
+			throw std::runtime_error("Truncated WAV header: " + name);
+		}
+		auto u16 = [](const unsigned char *p)
+		{ return std::uint16_t(p[0]) | (std::uint16_t(p[1]) << 8); };
+		auto u32 = [](const unsigned char *p)
+		{
+			return std::uint32_t(p[0]) |
+			       (std::uint32_t(p[1]) << 8) |
+			       (std::uint32_t(p[2]) << 16) |
+			       (std::uint32_t(p[3]) << 24);
+		};
+		if (std::memcmp(hdr + 0,  "RIFF", 4) != 0 ||
+		    std::memcmp(hdr + 8,  "WAVE", 4) != 0 ||
+		    std::memcmp(hdr + 12, "fmt ", 4) != 0 ||
+		    std::memcmp(hdr + 36, "data", 4) != 0)
+		{
+			closeFile();
+			throw std::runtime_error("Not a canonical RIFF/PCM WAV: " + name);
+		}
+		const std::uint32_t fmtSize = u32(hdr + 16);
+		const std::uint16_t format = u16(hdr + 20);
+		if (fmtSize != 16 || format != 1)
 		{
 			closeFile();
 			throw std::runtime_error(
-				"Not a valid WAV file (read_wav_header error " + std::to_string(err) + ")");
+				"Unsupported WAV format (need PCM, 16-byte fmt chunk): " + name);
 		}
 
-		rate = hdr.Fmt.SampleRate;
-		channels = hdr.Fmt.NumChannels;
-		// Despite its name, this header field holds *bits* per sample.
-		bits = hdr.Fmt.BytesPerSample;
+		channels = u16(hdr + 22);
+		rate = u32(hdr + 24);
+		bits = u16(hdr + 34);
 
 		if (bits != 8 && bits != 16)
 		{

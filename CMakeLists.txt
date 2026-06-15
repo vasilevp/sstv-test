@@ -35,18 +35,6 @@ if(ENABLE_CLANG_TIDY)
       "-checks=-*,modernize-*,performance-*,bugprone-*,clang-analyzer-*,misc-*,portability-*,llvm-*,cert-*,concurrency-*,-misc-const-correctness")
 endif()
 
-# --- Libraries -------------------------------------------------------------
-# C-Wav-Lib (RIFF/WAV reader-writer), built from the git submodule.
-add_library(wav STATIC
-  modules/C-Wav-Lib/endianness.c
-  modules/C-Wav-Lib/wav.c)
-target_include_directories(wav PUBLIC modules)
-
-# LoadBMP wrapper.
-add_library(bmp STATIC
-  src/bmp/loadbmp.cpp)
-target_include_directories(bmp PUBLIC modules)
-
 # --- Executables -----------------------------------------------------------
 add_executable(encoder
   src/encoder/main.cpp
@@ -78,8 +66,7 @@ add_executable(decoder
   src/decoder/martin.cpp
   src/decoder/scottie.cpp
   src/decoder/pd.cpp)
-target_include_directories(decoder PRIVATE src modules)
-target_link_libraries(decoder PRIVATE wav)
+target_include_directories(decoder PRIVATE src)
 
 install(TARGETS encoder decoder RUNTIME DESTINATION bin)
 
@@ -111,5 +98,4 @@ add_executable(modulator_correctness
   src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
   src/decoder/exponential_moving_average.cpp)
-target_include_directories(modulator_correctness PRIVATE src/decoder modules)
-target_link_libraries(modulator_correctness PRIVATE wav bmp)
+target_include_directories(modulator_correctness PRIVATE src/decoder)

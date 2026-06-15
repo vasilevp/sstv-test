@@ -1,9 +1,3 @@
-[submodule "C-Wav-Lib"]
-	path = modules/C-Wav-Lib
-	url = git@github.com:gehaxelt/C-Wav-Lib.git
-[submodule "LoadBMP"]
-	path = modules/LoadBMP
-	url = git@github.com:MrVallentin/LoadBMP.git
 [submodule "modules/font8x8"]
 	path = modules/font8x8
 	url = git@github.com:dhepper/font8x8.git
