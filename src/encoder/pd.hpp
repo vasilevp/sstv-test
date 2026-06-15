@@ -12,7 +12,7 @@
 class PD : Encoder
 {
 public:
-	PD(PixelSource &source,
+	PD(RowSource &source,
 	   Synthesizer &&s,
 	   // Per-channel pixel duration, milliseconds.
 	   float channelTime = 121.6f,

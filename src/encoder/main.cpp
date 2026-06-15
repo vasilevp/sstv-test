@@ -2,7 +2,7 @@
 #include <print>
 #include <string>
 
-#include "bmp_pixel_source.hpp"
+#include "bmp_row_source.hpp"
 #include "martin.hpp"
 #include "pd.hpp"
 #include "robot36.hpp"
@@ -11,19 +11,19 @@
 #include "scottie.hpp"
 #include "synthesizer.hpp"
 #include "utils.hpp"
-#include "wav_file_sink.hpp"
+#include "wav_sample_sink.hpp"
 
 using namespace std;
 
 namespace
 {
-	// Tie a WAVFileSink + Synthesizer together over an output path. The
+	// Tie a WAVSampleSink + Synthesizer together over an output path. The
 	// sink stays alive for as long as we hold the helper, the synthesizer
 	// references it. After the encode is driven to completion, finish()
 	// closes the sink (patching the RIFF + data sizes in the header).
 	struct Run
 	{
-		WAVFileSink sink;
+		WAVSampleSink sink;
 		Synthesizer synth;
 
 		Run(const string &out, std::uint32_t rate = 8000)
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 		// The pixel source is opened once and reused across every encode;
 		// its tiny two-row cache makes top-down access cheap regardless of
 		// how many output modes we run.
-		BMPPixelSource source(argv[1]);
+		BMPRowSource source(argv[1]);
 
 		{
 			Run r("outputs/raw.wav");

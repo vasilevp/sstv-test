@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "pixel_source.hpp"
+#include "row_source.hpp"
 
 // Streaming 24-bit BMP reader. Parses the BMP/DIB headers once at open,
 // then seeks to each requested row on demand. Holds the two most-recently
@@ -20,14 +20,14 @@
 // encoder has always assumed. Both row orientations are handled: standard
 // bottom-up files seek to height-1-y * rowBytes; top-down files (negative
 // DIB height) seek to y * rowBytes.
-class BMPPixelSource : public PixelSource
+class BMPRowSource : public RowSource
 {
 public:
-	explicit BMPPixelSource(const std::string &path);
-	~BMPPixelSource() override;
+	explicit BMPRowSource(const std::string &path);
+	~BMPRowSource() override;
 
-	BMPPixelSource(const BMPPixelSource &) = delete;
-	BMPPixelSource &operator=(const BMPPixelSource &) = delete;
+	BMPRowSource(const BMPRowSource &) = delete;
+	BMPRowSource &operator=(const BMPRowSource &) = delete;
 
 	std::uint32_t width() const override { return imgWidth; }
 	std::uint32_t height() const override { return imgHeight; }

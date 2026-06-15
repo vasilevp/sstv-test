@@ -7,7 +7,7 @@ class Synthesizer;
 class Robot8 : Encoder
 {
 public:
-	Robot8(PixelSource &source,
+	Robot8(RowSource &source,
 		Synthesizer &&output,
 		// Whether to send an 8-line calibration gradient at the start.
 		const std::string &greeting = "",

@@ -49,7 +49,7 @@ void Martin::colorLine(uint32_t i, size_t color)
 	// sync porch
 	s.Synth(syncPorch, Frequency::SyncPorch);
 
-	const auto row = pixels.row(i);
+	const auto row = source.row(i);
 	for (size_t j = 0; j < width; ++j)
 	{
 		const float c = row[j * 3 + color];

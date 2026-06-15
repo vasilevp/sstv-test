@@ -1,4 +1,4 @@
-#include "wav_file_sink.hpp"
+#include "wav_sample_sink.hpp"
 
 #include <cstring>
 #include <stdexcept>
@@ -20,7 +20,7 @@ namespace
 	}
 }
 
-WAVFileSink::WAVFileSink(const std::string &path, std::uint32_t sampleRate)
+WAVSampleSink::WAVSampleSink(const std::string &path, std::uint32_t sampleRate)
 	: path(path), sampleRate(sampleRate)
 {
 	file = path != "-" ? std::fopen(path.c_str(), "wb") : stdout;
@@ -48,14 +48,14 @@ WAVFileSink::WAVFileSink(const std::string &path, std::uint32_t sampleRate)
 	// Header bytes don't count toward the data-chunk size; write them
 	// directly so `bytesWritten` only tracks audio payload.
 	if (std::fwrite(hdr, 1, sizeof(hdr), file) != sizeof(hdr))
-		throw std::runtime_error("WAVFileSink header write failed: " + path);
+		throw std::runtime_error("WAVSampleSink header write failed: " + path);
 
 	// Pad the start with 0.5 s of silence so off-the-shelf players don't
 	// click on first frame — matches the previous WAVWriter's behaviour.
 	writeSilence(sampleRate / 2);
 }
 
-WAVFileSink::~WAVFileSink()
+WAVSampleSink::~WAVSampleSink()
 {
 	// Best-effort close — if the caller forgot to call finish() we still
 	// release the file (the header will be wrong but the OS won't leak it).
@@ -63,21 +63,21 @@ WAVFileSink::~WAVFileSink()
 		std::fclose(file);
 }
 
-void WAVFileSink::put(std::uint8_t sample)
+void WAVSampleSink::put(std::uint8_t sample)
 {
 	if (finished)
-		throw std::runtime_error("WAVFileSink::put after finish");
+		throw std::runtime_error("WAVSampleSink::put after finish");
 	writeBytes(&sample, 1);
 }
 
-void WAVFileSink::put(std::span<const std::uint8_t> samples)
+void WAVSampleSink::put(std::span<const std::uint8_t> samples)
 {
 	if (finished)
-		throw std::runtime_error("WAVFileSink::put after finish");
+		throw std::runtime_error("WAVSampleSink::put after finish");
 	writeBytes(samples.data(), samples.size());
 }
 
-void WAVFileSink::finish()
+void WAVSampleSink::finish()
 {
 	if (!file || finished)
 		return;
@@ -102,19 +102,19 @@ void WAVFileSink::finish()
 	file = nullptr;
 }
 
-void WAVFileSink::writeBytes(const void *data, std::size_t size)
+void WAVSampleSink::writeBytes(const void *data, std::size_t size)
 {
 	if (size == 0)
 		return;
 	if (std::fwrite(data, 1, size, file) != size)
-		throw std::runtime_error("WAVFileSink short write: " + path);
+		throw std::runtime_error("WAVSampleSink short write: " + path);
 	// Header bytes (the first 44) don't count toward the data-chunk size.
 	if (bytesWritten + size < bytesWritten) // (paranoia: catch overflow)
-		throw std::runtime_error("WAVFileSink size overflow: " + path);
+		throw std::runtime_error("WAVSampleSink size overflow: " + path);
 	bytesWritten += static_cast<std::uint32_t>(size);
 }
 
-void WAVFileSink::writeSilence(std::uint32_t sampleCount)
+void WAVSampleSink::writeSilence(std::uint32_t sampleCount)
 {
 	constexpr std::uint8_t centre = 128;
 	constexpr std::size_t chunk = 256;

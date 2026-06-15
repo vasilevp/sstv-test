@@ -11,10 +11,10 @@
 // width() and height() are constant for the source's lifetime; row(y)
 // returns a borrowed view of `width()*3` bytes in RGB order (R, G, B,
 // R, G, B, ...). The returned span is invalidated by the next row() call.
-class PixelSource
+class RowSource
 {
 public:
-	virtual ~PixelSource() = default;
+	virtual ~RowSource() = default;
 
 	virtual std::uint32_t width() const = 0;
 	virtual std::uint32_t height() const = 0;

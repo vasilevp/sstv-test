@@ -8,7 +8,7 @@
 class Martin : Encoder
 {
 public:
-	Martin(PixelSource &source,
+	Martin(RowSource &source,
 		   Synthesizer &&s,
 		   uint8_t mode,
 		   const std::string &greeting = "")

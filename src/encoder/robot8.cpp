@@ -28,7 +28,7 @@ void Robot8::Encode()
 		// sync pulse
 		s.Synth(syncTime, SyncPulse);
 
-		const auto row = pixels.row(i);
+		const auto row = source.row(i);
 		for (size_t j = 0; j < width; ++j)
 		{
 			float Y = getY(row.subspan(j * 3, 3));

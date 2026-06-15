@@ -17,7 +17,7 @@
 
 #include "decoder.hpp"
 #include "demodulator.hpp"
-#include "wav.hpp"
+#include "wav_sample_source.hpp"
 
 #include <cmath>
 #include <cstdint>
@@ -121,7 +121,7 @@ int main()
 
 	for (const ModeSpec &m : modes)
 	{
-		WAVReader wav(m.wav);
+		WAVSampleSource wav(m.wav);
 		const uint32_t rate = wav.sampleRate();
 		// Drain the streaming source into a vector — this offline test
 		// wants random-access slicing into the freq buffer, so streaming

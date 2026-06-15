@@ -39,8 +39,8 @@ endif()
 add_executable(encoder
   src/encoder/main.cpp
   src/encoder/encoder.cpp
-  src/encoder/bmp_pixel_source.cpp
-  src/encoder/wav_file_sink.cpp
+  src/encoder/bmp_row_source.cpp
+  src/encoder/wav_sample_sink.cpp
   src/encoder/robot8.cpp
   src/encoder/robot.cpp
   src/encoder/martin.cpp

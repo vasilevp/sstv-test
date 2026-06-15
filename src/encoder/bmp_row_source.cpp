@@ -1,4 +1,4 @@
-#include "bmp_pixel_source.hpp"
+#include "bmp_row_source.hpp"
 
 #include <cstring>
 #include <stdexcept>
@@ -24,7 +24,7 @@ namespace
 	}
 }
 
-BMPPixelSource::BMPPixelSource(const std::string &path)
+BMPRowSource::BMPRowSource(const std::string &path)
 {
 	file = std::fopen(path.c_str(), "rb");
 	if (!file)
@@ -64,16 +64,16 @@ BMPPixelSource::BMPPixelSource(const std::string &path)
 	cachedData[1].resize(std::size_t(imgWidth) * 3);
 }
 
-BMPPixelSource::~BMPPixelSource()
+BMPRowSource::~BMPRowSource()
 {
 	if (file)
 		std::fclose(file);
 }
 
-std::span<const std::uint8_t> BMPPixelSource::row(std::uint32_t y)
+std::span<const std::uint8_t> BMPRowSource::row(std::uint32_t y)
 {
 	if (y >= imgHeight)
-		throw std::runtime_error("BMPPixelSource::row out of range");
+		throw std::runtime_error("BMPRowSource::row out of range");
 
 	for (std::uint8_t slot = 0; slot < 2; ++slot)
 	{
@@ -93,19 +93,19 @@ std::span<const std::uint8_t> BMPPixelSource::row(std::uint32_t y)
 	return std::span<const std::uint8_t>(cachedData[evict]);
 }
 
-void BMPPixelSource::loadRow(std::uint32_t y, std::vector<std::uint8_t> &dst)
+void BMPRowSource::loadRow(std::uint32_t y, std::vector<std::uint8_t> &dst)
 {
 	const std::uint32_t fileRow = topDown ? y : (imgHeight - 1 - y);
 	const long offset = long(pixelOffset) + long(fileRow) * long(rowBytes);
 	if (std::fseek(file, offset, SEEK_SET) != 0)
-		throw std::runtime_error("BMPPixelSource::loadRow seek failed");
+		throw std::runtime_error("BMPRowSource::loadRow seek failed");
 
 	// Read width*3 BGR bytes (skipping the trailing padding implicitly:
 	// we only ask for the pixel bytes themselves; the seek above already
 	// landed us at the start of the row).
 	const std::size_t want = std::size_t(imgWidth) * 3;
 	if (std::fread(dst.data(), 1, want, file) != want)
-		throw std::runtime_error("BMPPixelSource::loadRow short read");
+		throw std::runtime_error("BMPRowSource::loadRow short read");
 
 	// On-disk byte order is BGR; the rest of the encoder expects RGB
 	// triplets (matching what loadbmp_decode_file used to hand back).

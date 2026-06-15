@@ -12,7 +12,7 @@
 #include "utils.hpp"
 
 Scottie::Scottie(
-	PixelSource &source,
+	RowSource &source,
 	Synthesizer &&s,
 	Mode mode,
 	const std::string &greeting) : Encoder(source, std::move(s), mode), greeting(greeting)
@@ -82,7 +82,7 @@ void Scottie::colorLine(uint32_t i, size_t color)
 	// sync porch
 	s.Synth(1.5, Frequency::SyncPorch);
 
-	const auto row = pixels.row(i);
+	const auto row = source.row(i);
 	for (size_t j = 0; j < width; ++j)
 	{
 		float c = row[j * 3 + color];

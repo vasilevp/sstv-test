@@ -7,7 +7,7 @@ class Synthesizer;
 class Robot36 : public Robot
 {
 public:
-	Robot36(PixelSource &source,
+	Robot36(RowSource &source,
 		Synthesizer &&output,
 		const std::string &greeting = "")
 		: Robot(source, std::move(output), 8, lineTime, greeting, false)

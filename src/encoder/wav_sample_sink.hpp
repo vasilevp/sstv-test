@@ -18,14 +18,14 @@
 // 0.5 s of silence is written before and after the SSTV signal — same
 // padding the previous WAVWriter applied so off-the-shelf players don't
 // click on first/last frame.
-class WAVFileSink : public SampleSink
+class WAVSampleSink : public SampleSink
 {
 public:
-	WAVFileSink(const std::string &path, std::uint32_t sampleRate);
-	~WAVFileSink() override;
+	WAVSampleSink(const std::string &path, std::uint32_t sampleRate);
+	~WAVSampleSink() override;
 
-	WAVFileSink(const WAVFileSink &) = delete;
-	WAVFileSink &operator=(const WAVFileSink &) = delete;
+	WAVSampleSink(const WAVSampleSink &) = delete;
+	WAVSampleSink &operator=(const WAVSampleSink &) = delete;
 
 	void put(std::uint8_t sample) override;
 	void put(std::span<const std::uint8_t> samples) override;

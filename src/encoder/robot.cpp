@@ -29,7 +29,7 @@ void Robot::Encode()
 		s.Synth(syncPorch, Frequency::SyncPorch);
 
 		{
-			const auto row = pixels.row(i);
+			const auto row = source.row(i);
 			for (size_t j = 0; j < width; ++j)
 			{
 				float Y = getY(row.subspan(j * 3, 3));
@@ -65,11 +65,11 @@ void Robot::Encode()
 			auto getChroma = (isRedBurst ? getChromaRed : GetChromaBlue);
 			for (size_t j = 0; j < width; ++j)
 			{
-				// PixelSource's two-row LRU cache keeps the i and i+shift
+				// RowSource's two-row LRU cache keeps the i and i+shift
 				// rows resident across the j-loop, so the alternating
 				// access pattern doesn't re-seek per pixel.
-				float c1 = getChroma(pixels.row(i).subspan(j * 3, 3));
-				float c2 = getChroma(pixels.row(i + shift).subspan(j * 3, 3));
+				float c1 = getChroma(source.row(i).subspan(j * 3, 3));
+				float c2 = getChroma(source.row(i + shift).subspan(j * 3, 3));
 				auto freq = Synthesizer::Lerp((c1 + c2) / 2 / 255);
 
 				// send pixel

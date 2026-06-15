@@ -5,7 +5,7 @@
 #include <span>
 #include <utility>
 
-#include "pixel_source.hpp"
+#include "row_source.hpp"
 #include "synthesizer.hpp"
 
 class Encoder
@@ -18,20 +18,20 @@ public:
 protected:
 	const uint8_t visCode;
 
-	// Pixel input and audio output are both injected — the pixel rows are
-	// pulled on demand from `pixels` (the streaming BMP source caches the
+	// Pixel input and audio output are both injected — image rows are
+	// pulled on demand from `source` (the streaming BMP source caches the
 	// two most-recently read rows for the encoders that need adjacent-row
 	// access), and emitted samples flow through the Synthesizer into the
 	// sink it was constructed over.
-	PixelSource &pixels;
+	RowSource &source;
 	uint32_t width;
 	uint32_t height;
 	uint32_t targetHeight;
 	Synthesizer s;
 
-	Encoder(PixelSource &source, Synthesizer &&s, uint8_t visCode)
+	Encoder(RowSource &source, Synthesizer &&s, uint8_t visCode)
 		: visCode(visCode),
-		  pixels(source),
+		  source(source),
 		  width(source.width()),
 		  height(source.height()),
 		  s(std::move(s))

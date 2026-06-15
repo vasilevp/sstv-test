@@ -10,7 +10,7 @@ public:
 
 protected:
 	Robot(
-		PixelSource &source,
+		RowSource &source,
 		Synthesizer &&s,
 		const int vCode,
 		// Scanline length in milliseconds.

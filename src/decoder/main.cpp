@@ -19,7 +19,7 @@
 #include "row_sink.hpp"
 #include "sample_source.hpp"
 #include "scottie.hpp"
-#include "wav.hpp"
+#include "wav_sample_source.hpp"
 
 namespace
 {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 		const std::string output = positional[1];
 		uint32_t width = positional.size() == 3 ? uint32_t(std::stoul(positional[2])) : 320;
 
-		std::unique_ptr<SampleSource> source = std::make_unique<WAVReader>(input);
+		std::unique_ptr<SampleSource> source = std::make_unique<WAVSampleSource>(input);
 		const std::uint32_t rate = source->sampleRate();
 
 		std::println("Demodulator: {}{}{}",

@@ -19,10 +19,10 @@
 // mono or multi-channel. Extra channels are averaged down to mono on
 // read(). Files with extra chunks (LIST/INFO, fact, ...) or non-16-byte
 // fmt chunks are rejected — the project's encoder doesn't write those.
-class WAVReader : public SampleSource
+class WAVSampleSource : public SampleSource
 {
 public:
-	explicit WAVReader(const std::string &name)
+	explicit WAVSampleSource(const std::string &name)
 	{
 		file = name != "-" ? std::fopen(name.c_str(), "rb") : stdin;
 		if (!file)
@@ -79,10 +79,10 @@ public:
 		}
 	}
 
-	~WAVReader() override { closeFile(); }
+	~WAVSampleSource() override { closeFile(); }
 
-	WAVReader(const WAVReader &) = delete;
-	WAVReader &operator=(const WAVReader &) = delete;
+	WAVSampleSource(const WAVSampleSource &) = delete;
+	WAVSampleSource &operator=(const WAVSampleSource &) = delete;
 
 	std::size_t read(std::span<float> out) override
 	{

@@ -25,11 +25,11 @@ void PD::Encode()
 		s.Synth(syncPulse, SyncPulse);
 		s.Synth(syncPorch, SyncPorch);
 
-		// Y of line i. The PixelSource's two-row LRU keeps row i resident
+		// Y of line i. The RowSource's two-row LRU keeps row i resident
 		// across the chroma loops below, so the alternating row(i)/row(i+1)
 		// accesses don't re-seek.
 		{
-			const auto rowA = pixels.row(i);
+			const auto rowA = source.row(i);
 			for (size_t j = 0; j < width; ++j)
 			{
 				const float Y = getY(rowA.subspan(j * 3, 3));
@@ -40,22 +40,22 @@ void PD::Encode()
 		// R-Y averaged across the pair.
 		for (size_t j = 0; j < width; ++j)
 		{
-			const float c1 = getChromaRed(pixels.row(i).subspan(j * 3, 3));
-			const float c2 = getChromaRed(pixels.row(i + 1).subspan(j * 3, 3));
+			const float c1 = getChromaRed(source.row(i).subspan(j * 3, 3));
+			const float c2 = getChromaRed(source.row(i + 1).subspan(j * 3, 3));
 			s.Synth(pixelTime, Synthesizer::Lerp((c1 + c2) / 2 / 255));
 		}
 
 		// B-Y averaged across the pair.
 		for (size_t j = 0; j < width; ++j)
 		{
-			const float c1 = GetChromaBlue(pixels.row(i).subspan(j * 3, 3));
-			const float c2 = GetChromaBlue(pixels.row(i + 1).subspan(j * 3, 3));
+			const float c1 = GetChromaBlue(source.row(i).subspan(j * 3, 3));
+			const float c2 = GetChromaBlue(source.row(i + 1).subspan(j * 3, 3));
 			s.Synth(pixelTime, Synthesizer::Lerp((c1 + c2) / 2 / 255));
 		}
 
 		// Y of line i+1.
 		{
-			const auto rowB = pixels.row(i + 1);
+			const auto rowB = source.row(i + 1);
 			for (size_t j = 0; j < width; ++j)
 			{
 				const float Y = getY(rowB.subspan(j * 3, 3));

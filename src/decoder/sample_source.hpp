@@ -4,7 +4,7 @@
 
 // Pull interface for audio samples. The decoder doesn't read from the input
 // directly; it consumes whatever a SampleSource hands back, one block at a
-// time. WAVReader implements it for a file-on-disk; an embedded port would
+// time. WAVSampleSource implements it for a file-on-disk; an embedded port
 // implement it on top of I2S/ADC and feed audio in chunks as DMA hands them
 // back.
 class SampleSource
