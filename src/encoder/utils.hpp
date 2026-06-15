@@ -6,6 +6,8 @@
 #include <memory>
 #include <print>
 
+#include "sine_lut.hpp"
+
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
 #define DEFER(x) std::shared_ptr<void> CONCAT(_defer___, __COUNTER__)(nullptr, [&](auto) { x; });
@@ -13,10 +15,6 @@
 
 namespace utils
 {
-	static constexpr auto lut = std::to_array<int8_t>({
-#include "sine2000.csv"
-	});
-
 	static constexpr bool getText(size_t i, size_t j, size_t size, const std::string &text)
 	{
 		// this is bullshit but it works

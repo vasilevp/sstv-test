@@ -56,7 +56,7 @@ public:
 		frame -= newframe;
 		while (newframe-- > 0)
 		{
-			const std::uint8_t x = utils::lut[((idx / freq_step) % utils::lut.size())] + 128;
+			const std::uint8_t x = utils::lut[(idx / freq_step) % utils::lut.size()] + 128;
 			idx += freq;
 			sink->put(x);
 		}

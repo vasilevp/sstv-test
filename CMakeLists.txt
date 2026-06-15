@@ -10,7 +10,7 @@ endif()
 
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -81,7 +81,7 @@ add_executable(demodulator_correctness
   src/decoder/bandpass_demodulator.cpp
   src/decoder/biquad.cpp
   src/decoder/kaiser_fir.cpp)
-target_include_directories(demodulator_correctness PRIVATE src/decoder)
+target_include_directories(demodulator_correctness PRIVATE src src/decoder)
 
 # Correctness test for the encoder (the modulator). Reads each WAV in
 # outputs/ and checks its scanline cadence and the 1900 Hz calibration
@@ -98,4 +98,4 @@ add_executable(modulator_correctness
   src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
   src/decoder/exponential_moving_average.cpp)
-target_include_directories(modulator_correctness PRIVATE src/decoder)
+target_include_directories(modulator_correctness PRIVATE src src/decoder)

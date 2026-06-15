@@ -3,6 +3,8 @@
 #include <cmath>
 #include <numbers>
 
+#include "sine_lut.hpp"
+
 namespace
 {
 	constexpr float TwoPi = 2.0f * std::numbers::pi_v<float>;
@@ -20,8 +22,8 @@ float QuadratureDemodulator::process(float sample)
 {
 	// Down-convert: multiply the real input by exp(-j * 2π * fc * t) to
 	// shift the signal centred at fc down to baseband.
-	const float c = std::cos(phase_);
-	const float s = std::sin(phase_);
+	const float c = utils::cos(phase_);
+	const float s = utils::sin(phase_);
 	const float rawI = sample * c;
 	const float rawQ = -sample * s;
 
