@@ -6,7 +6,7 @@
 #include <memory>
 #include <print>
 
-#include "sine_lut.hpp"
+#include "common/sine_lut.hpp"
 
 #define CONCAT_IMPL(a, b) a##b
 #define CONCAT(a, b) CONCAT_IMPL(a, b)

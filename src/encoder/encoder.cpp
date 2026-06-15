@@ -1,5 +1,7 @@
 #include "encoder.hpp"
 
+#include <utility>
+
 #include "synthesizer.hpp"
 #include "utils.hpp"
 
@@ -20,7 +22,7 @@ void Encoder::writeHeader()
 	s.Synth(30, SyncPulse);
 
 	// 8 => 0b1000 => 0 0 0 1 0 0 0
-	auto code = visCode;
+	auto code = std::to_underlying(visCode);
 	uint8_t parity = 0;
 	for (auto i = 0; i < 7; i++)
 	{

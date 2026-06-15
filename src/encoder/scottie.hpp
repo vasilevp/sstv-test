@@ -6,16 +6,7 @@ class Synthesizer;
 class Scottie : Encoder
 {
 public:
-	enum Mode
-	{
-		S1 = 60,
-		S2 = 56,
-		S3 = 52,
-		S4 = 48,
-		DX = 76,
-	};
-
-	Scottie(RowSource &source, Synthesizer &&s, Mode mode, const std::string &greeting = "");
+	Scottie(RowSource &source, Synthesizer &&s, sstv::VisCode mode, const std::string &greeting = "");
 
 	void Encode();
 

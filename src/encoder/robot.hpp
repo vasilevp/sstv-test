@@ -12,7 +12,7 @@ protected:
 	Robot(
 		RowSource &source,
 		Synthesizer &&s,
-		const int vCode,
+		const sstv::VisCode vCode,
 		// Scanline length in milliseconds.
 		const float lineTime,
 		const std::string &greeting,

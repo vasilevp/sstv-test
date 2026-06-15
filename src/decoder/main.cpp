@@ -11,6 +11,7 @@
 
 #include "bandpass_demodulator.hpp"
 #include "bmp_row_sink.hpp"
+#include "common/vis.hpp"
 #include "demodulator.hpp"
 #include "martin.hpp"
 #include "pd.hpp"
@@ -20,7 +21,6 @@
 #include "row_sink.hpp"
 #include "sample_source.hpp"
 #include "scottie.hpp"
-#include "vis.hpp"
 #include "vis_detector.hpp"
 #include "wav_sample_source.hpp"
 

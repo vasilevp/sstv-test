@@ -5,6 +5,7 @@
 #include <span>
 #include <utility>
 
+#include "common/vis.hpp"
 #include "row_source.hpp"
 #include "synthesizer.hpp"
 
@@ -16,7 +17,7 @@ public:
 	virtual void Encode() = 0;
 
 protected:
-	const uint8_t visCode;
+	const sstv::VisCode visCode;
 
 	// Pixel input and audio output are both injected — image rows are
 	// pulled on demand from `source` (the streaming BMP source caches the
@@ -29,7 +30,7 @@ protected:
 	uint32_t targetHeight;
 	Synthesizer s;
 
-	Encoder(RowSource &source, Synthesizer &&s, uint8_t visCode)
+	Encoder(RowSource &source, Synthesizer &&s, sstv::VisCode visCode)
 		: visCode(visCode),
 		  source(source),
 		  width(source.width()),

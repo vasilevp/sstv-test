@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "schmitt_trigger.hpp"
-#include "vis.hpp"
+#include "common/vis.hpp"
 
 // SSTV tone frequencies (Hz) — the decoding-side mirror of the encoder's
 // Synthesizer::Frequency enum.

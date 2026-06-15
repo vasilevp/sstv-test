@@ -16,7 +16,7 @@ public:
 	   Synthesizer &&s,
 	   // Per-channel pixel duration, milliseconds.
 	   float channelTime = 121.6f,
-	   uint8_t visCode = 95,
+	   sstv::VisCode visCode = sstv::VisCode::PD120,
 	   const std::string &greeting = "")
 		: Encoder(source, std::move(s), visCode),
 		  channelTime(channelTime),

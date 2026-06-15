@@ -28,19 +28,19 @@ private:
 	const std::string &greeting;
 
 	// VIS code per the SSTV handbook (Bruchanov, ch. 5).
-	inline static constexpr uint8_t vCode(const uint8_t mode)
+	inline static constexpr sstv::VisCode vCode(const uint8_t mode)
 	{
 		utils::Guard();
 
 		switch (mode)
 		{
-		case 1: return 44;
-		case 2: return 40;
-		case 3: return 36;
-		case 4: return 32;
+		case 1: return sstv::VisCode::MartinM1;
+		case 2: return sstv::VisCode::MartinM2;
+		case 3: return sstv::VisCode::MartinM3;
+		case 4: return sstv::VisCode::MartinM4;
 		default:
 			throw new std::invalid_argument("unknown mode");
-			return 40;
+			return sstv::VisCode::MartinM2;
 		}
 	};
 

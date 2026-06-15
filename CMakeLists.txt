@@ -46,7 +46,8 @@ add_executable(encoder
   src/encoder/martin.cpp
   src/encoder/scottie.cpp
   src/encoder/pd.cpp
-  src/encoder/utils.cpp)
+  src/encoder/utils.cpp
+  src/common/vis.cpp)
 target_include_directories(encoder PRIVATE src modules)
 
 add_executable(decoder
@@ -60,7 +61,7 @@ add_executable(decoder
   src/decoder/biquad.cpp
   src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
-  src/decoder/vis.cpp
+  src/common/vis.cpp
   src/decoder/vis_detector.cpp
   src/decoder/exponential_moving_average.cpp
   src/decoder/robot8.cpp
@@ -99,7 +100,7 @@ add_executable(modulator_correctness
   src/decoder/biquad.cpp
   src/decoder/kaiser_fir.cpp
   src/decoder/schmitt_trigger.cpp
-  src/decoder/vis.cpp
+  src/common/vis.cpp
   src/decoder/vis_detector.cpp
   src/decoder/exponential_moving_average.cpp)
 target_include_directories(modulator_correctness PRIVATE src src/decoder)

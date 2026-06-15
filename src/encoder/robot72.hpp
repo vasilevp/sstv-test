@@ -10,7 +10,7 @@ public:
 	Robot72(RowSource &source,
 		Synthesizer &&s,
 		const std::string &greeting = "")
-		: Robot(source, std::move(s), 12, lineTime, greeting, true)
+		: Robot(source, std::move(s), sstv::VisCode::RobotColor72, lineTime, greeting, true)
 	{
 		utils::Guard();
 	};

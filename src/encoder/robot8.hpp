@@ -18,7 +18,7 @@ public:
 		// Pixel-region duration in ms. 10 + 56.667 = 66.667 ms total,
 		// matching the handbook's lpm = 900 for Robot B&W 8.
 		float lineTime = 56.667f,
-		uint8_t visCode = 1)
+		sstv::VisCode visCode = sstv::VisCode::RobotBW8_R)
 		: Encoder(source, std::move(output), visCode),
 		  syncTime(syncTime),
 		  lineTime(lineTime),

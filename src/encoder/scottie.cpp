@@ -14,32 +14,33 @@
 Scottie::Scottie(
 	RowSource &source,
 	Synthesizer &&s,
-	Mode mode,
+	sstv::VisCode mode,
 	const std::string &greeting) : Encoder(source, std::move(s), mode), greeting(greeting)
 {
 	utils::Guard();
 
 	switch (mode)
 	{
-	case S1:
+		using enum sstv::VisCode;
+	case ScottieS1:
 		lineTime = 138.240;
 		standardLines = 256;
 		break;
-	case S2:
+	case ScottieS2:
 		lineTime = 88.064;
 		standardLines = 256;
 		break;
-	case S3:
+	case ScottieS3:
 		// S3 has the same per-line timing as S1, but only 128 image lines.
 		lineTime = 138.240;
 		standardLines = 128;
 		break;
-	case S4:
+	case ScottieS4:
 		// S4 has the same per-line timing as S2, but only 128 image lines.
 		lineTime = 88.064;
 		standardLines = 128;
 		break;
-	case DX:
+	case ScottieDX:
 		lineTime = 345.600;
 		standardLines = 256;
 		break;

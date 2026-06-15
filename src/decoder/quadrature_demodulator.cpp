@@ -3,7 +3,7 @@
 #include <cmath>
 #include <numbers>
 
-#include "sine_lut.hpp"
+#include "common/sine_lut.hpp"
 
 namespace
 {

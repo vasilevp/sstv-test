@@ -8,7 +8,7 @@
 #include "demodulator.hpp"
 #include "row_sink.hpp"
 #include "schmitt_trigger.hpp"
-#include "vis.hpp"
+#include "common/vis.hpp"
 #include "vis_detector.hpp"
 
 // Streaming base class for SSTV mode decoders.

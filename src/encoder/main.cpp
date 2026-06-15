@@ -3,6 +3,7 @@
 #include <string>
 
 #include "bmp_row_source.hpp"
+#include "common/vis.hpp"
 #include "martin.hpp"
 #include "pd.hpp"
 #include "robot36.hpp"
@@ -47,6 +48,8 @@ int main(int argc, char *argv[])
 
 	try
 	{
+		using sstv::VisCode;
+
 		// The pixel source is opened once and reused across every encode;
 		// its tiny two-row cache makes top-down access cheap regardless of
 		// how many output modes we run.
@@ -54,33 +57,33 @@ int main(int argc, char *argv[])
 
 		{
 			Run r("outputs/raw.wav");
-			Robot8(source, std::move(r.synth), "raw 5 93 9", 5, 93, 9).Encode();
+			Robot8(source, std::move(r.synth), "raw 5 93 9", 5, 93, VisCode{9}).Encode();
 			r.finish();
 		}
 
 		{
 			Run r("outputs/scottie1.wav");
-			Scottie(source, std::move(r.synth), Scottie::S1, "Scottie S1").Encode();
+			Scottie(source, std::move(r.synth), VisCode::ScottieS1, "Scottie S1").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/scottie2.wav");
-			Scottie(source, std::move(r.synth), Scottie::S2, "Scottie S2").Encode();
+			Scottie(source, std::move(r.synth), VisCode::ScottieS2, "Scottie S2").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/scottie3.wav");
-			Scottie(source, std::move(r.synth), Scottie::S3, "Scottie S3").Encode();
+			Scottie(source, std::move(r.synth), VisCode::ScottieS3, "Scottie S3").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/scottie4.wav");
-			Scottie(source, std::move(r.synth), Scottie::S4, "Scottie S4").Encode();
+			Scottie(source, std::move(r.synth), VisCode::ScottieS4, "Scottie S4").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/scottieDX.wav");
-			Scottie(source, std::move(r.synth), Scottie::DX, "Scottie DX").Encode();
+			Scottie(source, std::move(r.synth), VisCode::ScottieDX, "Scottie DX").Encode();
 			r.finish();
 		}
 
@@ -129,37 +132,37 @@ int main(int argc, char *argv[])
 		// per-pixel timing.
 		{
 			Run r("outputs/pd50.wav");
-			PD(source, std::move(r.synth), 91.52f, 93, "PD 50").Encode();
+			PD(source, std::move(r.synth), 91.52f, VisCode::PD50, "PD 50").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/pd90.wav");
-			PD(source, std::move(r.synth), 170.24f, 99, "PD 90").Encode();
+			PD(source, std::move(r.synth), 170.24f, VisCode::PD90, "PD 90").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/pd120.wav");
-			PD(source, std::move(r.synth), 121.6f, 95, "PD 120").Encode();
+			PD(source, std::move(r.synth), 121.6f, VisCode::PD120, "PD 120").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/pd160.wav");
-			PD(source, std::move(r.synth), 195.584f, 98, "PD 160").Encode();
+			PD(source, std::move(r.synth), 195.584f, VisCode::PD160, "PD 160").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/pd180.wav");
-			PD(source, std::move(r.synth), 183.04f, 96, "PD 180").Encode();
+			PD(source, std::move(r.synth), 183.04f, VisCode::PD180, "PD 180").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/pd240.wav");
-			PD(source, std::move(r.synth), 244.48f, 97, "PD 240").Encode();
+			PD(source, std::move(r.synth), 244.48f, VisCode::PD240, "PD 240").Encode();
 			r.finish();
 		}
 		{
 			Run r("outputs/pd290.wav");
-			PD(source, std::move(r.synth), 228.8f, 94, "PD 290").Encode();
+			PD(source, std::move(r.synth), 228.8f, VisCode::PD290, "PD 290").Encode();
 			r.finish();
 		}
 	}
