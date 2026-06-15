@@ -12,13 +12,13 @@
 class PD : Encoder
 {
 public:
-	PD(const std::string &input,
+	PD(PixelSource &source,
 	   Synthesizer &&s,
 	   // Per-channel pixel duration, milliseconds.
 	   float channelTime = 121.6f,
 	   uint8_t visCode = 95,
 	   const std::string &greeting = "")
-		: Encoder(input, std::move(s), visCode),
+		: Encoder(source, std::move(s), visCode),
 		  channelTime(channelTime),
 		  greeting(greeting)
 	{

@@ -12,14 +12,10 @@
 #include "utils.hpp"
 
 Scottie::Scottie(
-	// Input file name.
-	const std::string &input,
-	// Output synthesizer.
+	PixelSource &source,
 	Synthesizer &&s,
-	// Mode.
 	Mode mode,
-	// Greeting text.
-	const std::string &greeting) : Encoder(input, std::move(s), mode), greeting(greeting)
+	const std::string &greeting) : Encoder(source, std::move(s), mode), greeting(greeting)
 {
 	utils::Guard();
 
@@ -86,10 +82,10 @@ void Scottie::colorLine(uint32_t i, size_t color)
 	// sync porch
 	s.Synth(1.5, Frequency::SyncPorch);
 
+	const auto row = pixels.row(i);
 	for (size_t j = 0; j < width; ++j)
 	{
-		size_t offset = (i * width + j) * 3;
-		float c = pixels[offset + color];
+		float c = row[j * 3 + color];
 		auto freq = Synthesizer::Lerp(c / 255);
 
 		// pixel

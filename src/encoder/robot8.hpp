@@ -7,10 +7,7 @@ class Synthesizer;
 class Robot8 : Encoder
 {
 public:
-	Robot8(
-		// Input file name.
-		const std::string &input,
-		// Output file name.
+	Robot8(PixelSource &source,
 		Synthesizer &&output,
 		// Whether to send an 8-line calibration gradient at the start.
 		const std::string &greeting = "",
@@ -22,7 +19,7 @@ public:
 		// matching the handbook's lpm = 900 for Robot B&W 8.
 		float lineTime = 56.667f,
 		uint8_t visCode = 1)
-		: Encoder(input, std::move(output), visCode),
+		: Encoder(source, std::move(output), visCode),
 		  syncTime(syncTime),
 		  lineTime(lineTime),
 		  greeting(greeting)

@@ -7,14 +7,10 @@ class Synthesizer;
 class Robot72 : public Robot
 {
 public:
-	Robot72(
-		// Input file name.
-		const std::string &input,
-		// Output synthesizer.
+	Robot72(PixelSource &source,
 		Synthesizer &&s,
-		// Greeting text.
 		const std::string &greeting = "")
-		: Robot(input, std::move(s), 12, lineTime, greeting, true)
+		: Robot(source, std::move(s), 12, lineTime, greeting, true)
 	{
 		utils::Guard();
 	};

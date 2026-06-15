@@ -51,15 +51,15 @@ target_include_directories(bmp PUBLIC modules)
 add_executable(encoder
   src/encoder/main.cpp
   src/encoder/encoder.cpp
+  src/encoder/bmp_pixel_source.cpp
+  src/encoder/wav_file_sink.cpp
   src/encoder/robot8.cpp
   src/encoder/robot.cpp
   src/encoder/martin.cpp
   src/encoder/scottie.cpp
   src/encoder/pd.cpp
-  src/encoder/utils.cpp
-  src/encoder/wav.cpp)
-target_include_directories(encoder PRIVATE src)
-target_link_libraries(encoder PRIVATE wav bmp)
+  src/encoder/utils.cpp)
+target_include_directories(encoder PRIVATE src modules)
 
 add_executable(decoder
   src/decoder/main.cpp

@@ -1,9 +1,10 @@
 #pragma once
 #include <cmath>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
+#include "sample_sink.hpp"
 #include "utils.hpp"
-#include "wav.hpp"
 
 enum Frequency : uint16_t
 {
@@ -24,25 +25,19 @@ class Synthesizer
 public:
 	Synthesizer(const Synthesizer &) = delete;
 	Synthesizer &operator=(const Synthesizer &) = delete;
-
 	Synthesizer(Synthesizer &&) = default;
 	Synthesizer &operator=(Synthesizer &&) = default;
 
-	Synthesizer(const std::string &output, size_t sample_rate = 8000)
-		: sample_rate(sample_rate),
-		  freq_step(sample_rate / utils::lut.size()),
-		  w{output, sample_rate}
+	// The sink is borrowed, not owned — the caller is responsible for its
+	// lifetime (and for calling sink->finish() after the encode completes;
+	// the Encoder base does that on Synthesizer's behalf).
+	Synthesizer(SampleSink &sink, std::uint32_t sample_rate = 8000)
+		: sink(&sink),
+		  sample_rate(sample_rate),
+		  freq_step(sample_rate / utils::lut.size())
 	{
 		utils::Guard();
-	};
-
-	Synthesizer(const char output[], uint32_t sample_rate = 8000)
-		: sample_rate(sample_rate),
-		  freq_step(sample_rate / utils::lut.size()),
-		  w{output, sample_rate}
-	{
-		utils::Guard();
-	};
+	}
 
 	inline static constexpr Frequency Lerp(Frequency from, Frequency to, float f)
 	{
@@ -61,20 +56,22 @@ public:
 		frame -= newframe;
 		while (newframe-- > 0)
 		{
-			uint8_t x = utils::lut[((idx / freq_step) % utils::lut.size())] + 128;
+			const std::uint8_t x = utils::lut[((idx / freq_step) % utils::lut.size())] + 128;
 			idx += freq;
-			w.put(x);
+			sink->put(x);
 		}
 	}
 
+	std::uint32_t sampleRate() const { return sample_rate; }
+
 private:
-	WAVWriter w;
-	// MUST BE A MULTIPLE OF 2000
-	uint32_t sample_rate;
-	uint32_t freq_step;
+	SampleSink *sink;
+	std::uint32_t sample_rate;
+	std::uint32_t freq_step;
 
 	float frame = 0;
-	uint32_t idx = 0;
+	std::uint32_t idx = 0;
+
 	inline constexpr float ms2samp(float ms)
 	{
 		return sample_rate * ms / 1000;

@@ -15,7 +15,7 @@ public:
 		DX = 76,
 	};
 
-	Scottie(const std::string &input, Synthesizer &&s, Mode mode, const std::string &greeting = "");
+	Scottie(PixelSource &source, Synthesizer &&s, Mode mode, const std::string &greeting = "");
 
 	void Encode();
 

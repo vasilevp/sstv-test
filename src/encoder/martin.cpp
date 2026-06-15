@@ -49,10 +49,10 @@ void Martin::colorLine(uint32_t i, size_t color)
 	// sync porch
 	s.Synth(syncPorch, Frequency::SyncPorch);
 
+	const auto row = pixels.row(i);
 	for (size_t j = 0; j < width; ++j)
 	{
-		const size_t offset = (i * width + j) * 3;
-		const float c = pixels[offset + color];
+		const float c = row[j * 3 + color];
 		auto freq = Synthesizer::Lerp(c / 255);
 
 		// pixel

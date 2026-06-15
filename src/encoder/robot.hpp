@@ -10,19 +10,16 @@ public:
 
 protected:
 	Robot(
-		// Input file name.
-		const std::string &input,
-		// Output file name.
+		PixelSource &source,
 		Synthesizer &&s,
-		// VIS code.
 		const int vCode,
 		// Scanline length in milliseconds.
 		const float lineTime,
-		// Greeting text.
 		const std::string &greeting,
-		// Send both color bursts at once instead of alternating between scanlines. Used with the slower modes like Robot 72.
+		// Send both color bursts at once instead of alternating between
+		// scanlines. Used with the slower modes like Robot 72.
 		const bool fullColor)
-		: Encoder(input, std::move(s), vCode),
+		: Encoder(source, std::move(s), vCode),
 		  lineTime(lineTime),
 		  greeting(greeting),
 		  fullColor(fullColor)

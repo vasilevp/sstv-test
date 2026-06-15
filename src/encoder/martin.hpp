@@ -8,11 +8,11 @@
 class Martin : Encoder
 {
 public:
-	Martin(const std::string &input,
+	Martin(PixelSource &source,
 		   Synthesizer &&s,
 		   uint8_t mode,
 		   const std::string &greeting = "")
-		: Encoder(input, std::move(s), vCode(mode)),
+		: Encoder(source, std::move(s), vCode(mode)),
 		  mode(mode),
 		  greeting(greeting)
 	{

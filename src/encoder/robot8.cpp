@@ -28,10 +28,10 @@ void Robot8::Encode()
 		// sync pulse
 		s.Synth(syncTime, SyncPulse);
 
+		const auto row = pixels.row(i);
 		for (size_t j = 0; j < width; ++j)
 		{
-			size_t offset = (i * width + j) * 3;
-			float Y = getY(pixels, offset);
+			float Y = getY(row.subspan(j * 3, 3));
 
 			// pixel
 			s.Synth(pixelTime, s.Lerp(Y / 255));
