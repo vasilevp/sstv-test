@@ -10,24 +10,34 @@
 // Short Waves" (sstv-handbook.com), chapter 5 "List of SSTV modes".
 namespace sstv
 {
-	// The 7-bit VIS mode code. The named values are the modes this build
-	// recognises; the underlying type holds any 7-bit value that arrives off
-	// the air, so an unrecognised code is still a representable VisCode —
-	// modeName() reports it as "unknown" and isKnownMode() returns false.
+	// The 7-bit VIS mode code. Every mode the handbook lists has an enumerator;
+	// the underlying type still holds any 7-bit value that arrives off the air,
+	// so an unrecognised code is a representable VisCode for which modeName()
+	// reports "unknown" and isKnownMode() returns false.
 	//
-	// Robot B&W 8 occupies three consecutive codes (one per R/G/B filter
-	// component); they all denote the same mode, just a different colour-channel
-	// selection. The other Robot variants the handbook lists (Color 24, B&W
-	// 12/24/36, ...) are named by modeName() but have no enumerator here because
-	// no decoder is built for them.
+	// The Robot B&W modes occupy three consecutive codes each (one per R/G/B
+	// filter component); all three denote the same mode, just a different
+	// colour-channel selection. Some recognised modes (Robot Color 24, Robot
+	// B&W 12/24/36) have no decoder built for them — they are named, but the
+	// decoder falls back when one turns up.
 	enum class VisCode : uint8_t
 	{
 		RobotColor12 = 0,
 		RobotBW8_R = 1,
 		RobotBW8_G = 2,
 		RobotBW8_B = 3,
+		RobotColor24 = 4,
+		RobotBW12_R = 5,
+		RobotBW12_G = 6,
+		RobotBW12_B = 7,
 		RobotColor36 = 8,
+		RobotBW24_R = 9,
+		RobotBW24_G = 10,
+		RobotBW24_B = 11,
 		RobotColor72 = 12,
+		RobotBW36_R = 13,
+		RobotBW36_G = 14,
+		RobotBW36_B = 15,
 		MartinM4 = 32,
 		MartinM3 = 36,
 		MartinM2 = 40,
