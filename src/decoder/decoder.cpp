@@ -78,6 +78,38 @@ const char *sstv::visModeName(uint8_t code)
 	}
 }
 
+uint32_t sstv::visModeWidth(uint8_t code)
+{
+	// Widths are the "Columns" field of the mode table in the SSTV Handbook
+	// (Bruchanov OK2MNM), chapter 5 "List of SSTV modes":
+	//   https://www.sstv-handbook.com/download/sstv_05.pdf
+	switch (code)
+	{
+	// Robot B&W 8 (one VIS per R/G/B filter component). The handbook's row
+	// is internally transposed (it prints Lines=160/Columns=120, but 900 lpm
+	// over 8 s is 120 lines); the consistent, canonical frame is 160x120.
+	case 1:
+	case 2:
+	case 3:
+		return 160;
+	// PD family. The high-res variants are the reason this table exists:
+	// without it a PD120 frame decodes at the 320 default and comes out
+	// stretched 2:1 vertically (the row count is fixed by the transmission).
+	case 94: // PD 290
+		return 800;
+	case 98: // PD 160
+		return 512;
+	case 95: // PD 120
+	case 96: // PD 180
+	case 97: // PD 240
+		return 640;
+	// Everything else this decoder builds — Robot 36/72, Martin M1..M4,
+	// Scottie S1..S4/DX, PD 50/90 — is the classic 320-wide grid.
+	default:
+		return 320;
+	}
+}
+
 Decoder::VIS Decoder::detectVIS(const std::vector<float> &freq, uint32_t sampleRate)
 {
 	// Replay the buffer through the streaming detector in one pass; the same

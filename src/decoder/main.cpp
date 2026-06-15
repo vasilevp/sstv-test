@@ -26,10 +26,15 @@ namespace
 {
 	void printUsage(const char *argv0)
 	{
-		std::println("Usage: {} <input.wav> <output.bmp> [width] [--demod=zc|iq]", argv0);
+		std::println("Usage: {} <input.wav> <output.bmp> [--width=N] [--demod=zc|iq]", argv0);
 		std::println("  Decodes an SSTV recording into a BMP. The mode is selected");
 		std::println("  automatically from the header VIS code (Robot B&W 8, Robot");
 		std::println("  Color 36/72, Martin M1..M4, Scottie S1..S4/DX, PD 50..290).");
+		std::println("");
+		std::println("  --width=N   output pixels per line; defaults to the detected");
+		std::println("              mode's native grid (320 for most, 640 for PD120/");
+		std::println("              180/240, 512 for PD160, 800 for PD290, 160 for");
+		std::println("              Robot 8). Pass a value to override.");
 		std::println("");
 		std::println("  --demod=zc  zero-crossing demodulator (default; fast, ideal");
 		std::println("              for clean synthetic recordings)");
@@ -52,11 +57,31 @@ int main(int argc, char *argv[])
 	DemodKind demodKind = DemodKind::ZeroCrossing;
 	bool prefilter = false;
 	bool cadenceLock = false;
+	bool widthOverride = false;
+	uint32_t cliWidth = 0;
 	std::vector<std::string> positional;
 	for (int i = 1; i < argc; ++i)
 	{
 		std::string_view arg(argv[i]);
-		if (arg.starts_with("--demod="))
+		if (arg.starts_with("--width="))
+		{
+			std::string_view v = arg.substr(8);
+			try
+			{
+				cliWidth = uint32_t(std::stoul(std::string(v)));
+			}
+			catch (const std::exception &)
+			{
+				cliWidth = 0;
+			}
+			if (cliWidth == 0)
+			{
+				std::println("Error: --width must be a positive integer, got '{}'", v);
+				return 1;
+			}
+			widthOverride = true;
+		}
+		else if (arg.starts_with("--demod="))
 		{
 			std::string_view v = arg.substr(8);
 			if (v == "zc" || v == "zero-crossing")
@@ -83,7 +108,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (positional.size() < 2 || positional.size() > 3)
+	if (positional.size() != 2)
 	{
 		printUsage(argv[0]);
 		return 1;
@@ -93,7 +118,8 @@ int main(int argc, char *argv[])
 	{
 		const std::string input = positional[0];
 		const std::string output = positional[1];
-		uint32_t width = positional.size() == 3 ? uint32_t(std::stoul(positional[2])) : 320;
+		// --width overrides the mode's native grid; otherwise width is chosen
+		// from the detected VIS code below.
 
 		std::unique_ptr<SampleSource> source = std::make_unique<WAVSampleSource>(input);
 		const std::uint32_t rate = source->sampleRate();
@@ -150,6 +176,16 @@ int main(int argc, char *argv[])
 		// its own throwaway demodulator; this one will see every sample of
 		// the recording, including the probe section replayed back below.
 		auto demod = makeDemod();
+
+		// Width follows the detected mode's native pixel grid unless the user
+		// forced one. This is what keeps PD120 (ISS) and the other wide PD
+		// modes from decoding at the 320 default and coming out vertically
+		// stretched — the row count is fixed by the transmission, so an
+		// under-wide grid squashes the aspect ratio.
+		const uint32_t width = widthOverride
+		                           ? cliWidth
+		                           : sstv::visModeWidth(vis.found ? vis.code : 0);
+
 		std::unique_ptr<RowSink> sink = std::make_unique<BMPRowSink>(output, width);
 
 		std::unique_ptr<Decoder> decoder;
