@@ -115,24 +115,20 @@ int main(int argc, char *argv[])
 
 		// Pull audio from the streaming source into a reusable buffer and probe
 		// it for the VIS header sample-by-sample through a streaming detector,
-		// stopping as soon as the header is located (or after HeaderSearchSec
-		// without one). The buffer is replayed into the real decoder below, so
-		// no input is lost. A live receiver behaves the same: it listens until
-		// a header arrives, then commits to a mode.
-		//
-		// Real off-air recordings carry several seconds of voice and static
-		// before the SSTV header (the ISS/ARISS recordings run up to ~5.6 s),
-		// so search generously. This bound is the caller's policy — the
-		// streaming Decoder itself imposes none.
-		constexpr float HeaderSearchSec = 15.0f;
+		// stopping as soon as the header is located. Real off-air recordings
+		// carry several seconds of voice and static before the SSTV header (the
+		// ISS/ARISS recordings run up to ~5.6 s), so there is no search
+		// timeout — we read until a header turns up or the stream ends. The
+		// buffer is replayed into the real decoder below, so no input is lost.
+		// A live receiver behaves the same: it listens until a header arrives,
+		// then commits to a mode.
 		constexpr std::size_t Block = 4096;
-		const std::size_t probeCap = std::size_t(rate * HeaderSearchSec);
 		std::vector<float> probeAudio;
 		std::vector<float> blockBuf(Block);
 		auto probe = makeDemod();
 		VisDetector probeDetector(rate);
 		Decoder::VIS vis;
-		while (!vis.found && probeAudio.size() < probeCap)
+		while (!vis.found)
 		{
 			const std::size_t n = source->read(blockBuf);
 			if (n == 0)

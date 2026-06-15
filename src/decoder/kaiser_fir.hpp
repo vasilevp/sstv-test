@@ -36,6 +36,11 @@ public:
 
 private:
 	std::vector<float> taps_;
-	std::vector<float> ring_;
+	// Delay line stored twice back-to-back (length 2N): writing each new
+	// sample to both hist_[pos_] and hist_[pos_ + N] keeps the N most recent
+	// samples available as one *contiguous* run, so process() can convolve
+	// with a flat dot product the compiler can vectorise — no per-tap modulo
+	// wrap, no branch.
+	std::vector<float> hist_;
 	std::size_t pos_ = 0;
 };

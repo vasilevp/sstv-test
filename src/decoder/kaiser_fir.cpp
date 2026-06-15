@@ -89,7 +89,7 @@ void KaiserFir::setLowpass(float cutoffHz, float transitionHz, float sampleRate,
 		for (float &t : taps_)
 			t /= sum;
 
-	ring_.assign(N, 0.0f);
+	hist_.assign(2 * N, 0.0f);
 	pos_ = 0;
 }
 
@@ -97,19 +97,31 @@ float KaiserFir::process(float input)
 {
 	if (taps_.empty())
 		return input;
-	const std::size_t N = ring_.size();
-	ring_[pos_] = input;
+	const std::size_t N = taps_.size();
 
-	// Convolve newest-to-oldest. taps_[0] is the oldest end of the impulse
-	// response — pair it with the oldest x[] in the ring; taps_[N-1] is the
-	// newest end — pair it with the freshly written sample.
-	float acc = 0.0f;
-	std::size_t r = pos_;
-	for (std::size_t k = N; k-- > 0;)
+	// Write the newest sample into both halves of the doubled delay line so
+	// that hist_[pos_ + 1 .. pos_ + N] is always the N most recent samples in
+	// chronological order (oldest first) with no wrap.
+	hist_[pos_] = input;
+	hist_[pos_ + N] = input;
+	const float *w = &hist_[pos_ + 1];
+
+	// Convolve oldest-to-newest: taps_[0] pairs with the oldest sample,
+	// taps_[N-1] with the freshly written one. Four independent accumulators
+	// break the serial add-chain (the latency bottleneck) and let the
+	// compiler vectorise the contiguous dot product.
+	float a0 = 0.0f, a1 = 0.0f, a2 = 0.0f, a3 = 0.0f;
+	std::size_t k = 0;
+	for (; k + 4 <= N; k += 4)
 	{
-		acc += taps_[k] * ring_[r];
-		r = r == 0 ? N - 1 : r - 1;
+		a0 += taps_[k + 0] * w[k + 0];
+		a1 += taps_[k + 1] * w[k + 1];
+		a2 += taps_[k + 2] * w[k + 2];
+		a3 += taps_[k + 3] * w[k + 3];
 	}
+	float acc = (a0 + a1) + (a2 + a3);
+	for (; k < N; ++k)
+		acc += taps_[k] * w[k];
 
 	pos_ = pos_ + 1 == N ? 0 : pos_ + 1;
 	return acc;
@@ -117,6 +129,6 @@ float KaiserFir::process(float input)
 
 void KaiserFir::reset()
 {
-	std::fill(ring_.begin(), ring_.end(), 0.0f);
+	std::fill(hist_.begin(), hist_.end(), 0.0f);
 	pos_ = 0;
 }

@@ -39,6 +39,10 @@ private:
 
 	// Width of the FIR's transition band. Stopband edge therefore lands
 	// at 800 + 900 = 1700 Hz — still ~1.7 kHz clear of the sum frequency.
+	// A steep roll-off here matters on noisy off-air recordings: it keeps
+	// out-of-baseband noise (which would otherwise leak into the frequency
+	// estimate) well attenuated, so it is deliberately not widened to save
+	// taps.
 	static constexpr float LpfTransitionHz = 900.0f;
 
 	// Stopband attenuation. 50 dB is the standard headroom for audio-band
