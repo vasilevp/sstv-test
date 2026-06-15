@@ -95,12 +95,20 @@ void Decoder::processImage(size_t index, float freq)
 	// "late" enough that lineBuf contains the entire predicted line plus
 	// the entire predicted sync — so we can split it cleanly.
 	const size_t cadenceWindow = ms2samp(3.0f);
-	if (cadenceLock && haveAnchor && scanLinePeriod != 0 && haveLine && !inRun)
+	// Nominal sync-pulse length (period minus content). Used to size the
+	// synthetic sync below and, more importantly, to reject sub-band runs too
+	// short to be a real scanline sync (see the run tracker further down).
+	const size_t syncSamples = nominalLinePeriodSamples() > nominalContentSamples()
+		? nominalLinePeriodSamples() - nominalContentSamples()
+		: 0;
+	if (cadenceLock && haveAnchor && haveLine && !inRun)
 	{
-		const size_t syncSamples = nominalLinePeriodSamples() > nominalContentSamples()
-			? nominalLinePeriodSamples() - nominalContentSamples()
-			: 0;
-		const size_t predictedBegin = lastSyncBegin + scanLinePeriod;
+		// Use the measured period once it has locked, else fall back to the
+		// mode's nominal period. The fallback bounds the line count on signals
+		// too noisy to ever measure a stable period — without it the decoder
+		// would degenerate to "every sync edge is a line" and shatter.
+		const size_t period = scanLinePeriod != 0 ? scanLinePeriod : nominalLinePeriodSamples();
+		const size_t predictedBegin = lastSyncBegin + period;
 		const size_t predictedEnd = predictedBegin + syncSamples;
 		if (index > predictedEnd + cadenceWindow)
 		{
@@ -121,8 +129,13 @@ void Decoder::processImage(size_t index, float freq)
 	}
 
 	// Track sync-band runs. Past the header, every such run is normally one
-	// scanline sync pulse — except in noisy data where Schmitt blips can
-	// fire mid-line. Cadence validation filters those out.
+	// scanline sync pulse — but image content (a dark column, saturated chroma)
+	// can also dip into the sync band for a sample or two. A real sync holds the
+	// 1200 Hz tone for the mode's full pulse width; a content dip is far
+	// shorter. Requiring the run to last at least half the nominal pulse rejects
+	// those dips, which is what stops the cadence from locking onto a sub-line
+	// "sync" at a fraction of the true period. (xdsopl/robot36's sustained-tone
+	// latch does the same.)
 	if (sub && !inRun)
 	{
 		inRun = true;
@@ -131,7 +144,13 @@ void Decoder::processImage(size_t index, float freq)
 	else if (!sub && inRun)
 	{
 		inRun = false;
-		if (!haveLine)
+		const size_t runLen = index > runBegin ? index - runBegin : 0;
+		if (syncSamples != 0 && runLen < syncSamples / 2)
+		{
+			// Too short to be a scanline sync; the dip's samples stay in lineBuf
+			// as ordinary content. Leave the line untouched.
+		}
+		else if (!haveLine)
 		{
 			// First sync after the header: bootstrap. Line 0's content
 			// starts at this sync's end; the cadence anchor is its begin.
@@ -155,20 +174,21 @@ void Decoder::processImage(size_t index, float freq)
 		}
 		else
 		{
-			// Adaptive cadence: re-align to the real pulse whenever it lands
-			// near the measured line period. Until a period is established
-			// (the first few lines) trust every sync, exactly like the
-			// non-locked path; once established, an interval far short of the
-			// period is a spurious mid-line blip — ignore it and keep
-			// accumulating. Re-aligning to the actual sync each line is what
-			// tracks the transmitter clock and keeps the picture un-slanted.
+			// Adaptive cadence: re-align to the real pulse whenever its
+			// interval is a plausible whole line — within [2/3, 4/3] of the
+			// working period (measured once locked, else the mode nominal). The
+			// window is deliberately narrow: PD's chroma channels can dip into
+			// the sync band mid-pair, and a wider window would let those
+			// half-period blips lock the measured mean onto a sub-multiple of
+			// the true period, misregistering every line's channels. Intervals
+			// outside the window are ignored and the line keeps accumulating.
+			// The very first line is trusted unconditionally so Scottie's short
+			// segment 0 can set the anchor. Re-aligning to the actual sync each
+			// line tracks the transmitter clock and keeps the picture un-slanted.
+			const size_t period = scanLinePeriod != 0 ? scanLinePeriod : nominalLinePeriodSamples();
 			const size_t observed = runBegin > lastSyncBegin ? runBegin - lastSyncBegin : 0;
-			bool accept = scanLinePeriod == 0;
-			if (!accept)
-			{
-				const size_t tol = std::max(ms2samp(4.0f), scanLinePeriod / 50);
-				accept = observed + tol >= scanLinePeriod && observed <= scanLinePeriod + tol;
-			}
+			const bool accept = syncIntervalCount == 0 ||
+			                    (3 * observed >= 2 * period && 3 * observed <= 4 * period);
 			if (accept)
 			{
 				size_t contentLen = runBegin > lineStart ? runBegin - lineStart : 0;
